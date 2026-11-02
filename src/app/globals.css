@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f7f6fb;
+  --card: #ffffff;
+  --ink: #1d1b2c;
+  --muted: #6b6880;
+  --line: #e6e3ef;
+  --accent: #5b4bdb;
+  --accent-soft: #ece9ff;
+  --good: #1f9d6b;
+  --warn: #d98a00;
+  --bad: #d64545;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #12111a;
+    --card: #1c1b27;
+    --ink: #eeedf5;
+    --muted: #a19eb5;
+    --line: #2e2c3d;
+    --accent: #8f82ff;
+    --accent-soft: #2a2550;
+    --good: #3fc78f;
+    --warn: #f0a92e;
+    --bad: #ef6b6b;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-geist-sans);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-card shadow-sm;
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-card px-3.5 py-3 text-base text-ink outline-none placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/25;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-accent px-4 py-3 font-semibold text-white transition active:scale-[0.98] disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-xl border border-line bg-card px-4 py-3 font-medium text-ink transition active:scale-[0.98];
+  }
 }
