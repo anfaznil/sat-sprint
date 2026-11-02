@@ -2,7 +2,7 @@
 
 A private, phone-first SAT prep app for one student, Aleena, for the digital SAT on **Saturday, Dec 5, 2026**. Registration closes **Nov 20**.
 
-Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 · Supabase (Postgres, magic-link auth, Storage) · Anthropic Claude API (server routes only) · Vercel.
+Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 · Supabase (Postgres, Storage) · Anthropic Claude API (server routes only) · Vercel.
 
 ## Build status
 
@@ -22,33 +22,19 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
 ### 1. Create the Supabase project (free tier)
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. **SQL Editor:** run these files in order, pasting each one in:
+2. **SQL Editor → New query:** for each file below, in order, open it, copy its **contents**, paste them into the editor, and click **Run**. Each one should say "Success. No rows returned." Run each file once.
    1. `supabase/migrations/0001_schema.sql`: all tables, RLS, the rate-limit function, and the screenshots bucket
    2. `supabase/migrations/0002_seed_skills.sql`: College Board domains and skills
    3. `supabase/migrations/0003_drill_planned.sql`: daily drill size
    4. `supabase/migrations/0004_tutor_and_light_days.sql`: tutor message storage, light review days
    5. `supabase/migrations/0005_seed_flashcards.sql`: grammar flashcards
-   6. The allowlist: copy `supabase/allowlist.example.sql` to `supabase/allowlist.sql` (git-ignored), put in the two real emails, and run it.
+   6. `supabase/migrations/0006_passcode_mode.sql`: passcode access (no Supabase accounts)
 
-   If you use the Supabase CLI instead, run `supabase link` and then `supabase db push`. The allowlist still has to be run by hand.
+   With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
-3. **Authentication → URL Configuration**
-   - Site URL: your production URL, e.g. `https://sat-sprint.vercel.app`
-   - Redirect URLs: add `http://localhost:3000/**` and `https://<your-vercel-domain>/**`
+To check it worked, open **Table Editor**: `skills` should have 30 rows and `flashcards` 25.
 
-4. **Authentication → Emails → Templates:** set both the **Magic Link** and **Confirm signup** templates to:
-
-   ```html
-   <h2>Sign in to SAT Sprint</h2>
-   <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Tap here to sign in</a></p>
-   <p>Or type this code in the app: <strong>{{ .Token }}</strong></p>
-   ```
-
-   The `token_hash` link works even when the email opens in a different browser than the one that asked for it, which happens a lot with phone mail apps. The code is the fallback for when the link opens somewhere awkward, like inside the Gmail app.
-
-5. **Optional, after both of you have signed in once:** turn off **Authentication → Sign In / Providers → Allow new users to sign up**. Access is already locked down without this step: the login page only sends links to allowlisted emails, and RLS hides every row from anyone not in `app_users`.
-
-> Supabase's built-in email sender is rate-limited to a few emails per hour. That's plenty for two people. If it ever becomes a problem, a custom SMTP provider fixes it, but that's an extra service, so ask first.
+No email setup is needed. The app doesn't use Supabase Auth, magic links, or SMTP.
 
 ### 2. Environment variables
 
@@ -56,49 +42,53 @@ Copy `.env.example` to `.env.local` and fill it in:
 
 | Variable | Where it comes from |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same page. The publishable key (`sb_publishable_…`) or the legacy `anon` key both work. |
-| `ANTHROPIC_API_KEY` | console.anthropic.com. Needed from feature 3 on. Server-only. |
-| `AI_DAILY_LIMIT` | Max Claude calls per user per day (default 40) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API Keys |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same page: the publishable key (`sb_publishable_…`) or the legacy `anon` key. Safe in the browser: RLS blocks it from every table. It's only used to upload screenshots to one-time signed URLs. |
+| `SUPABASE_SECRET_KEY` | Same page: the **secret** key (`sb_secret_…`) or the legacy `service_role` key. **Server only. Never share it or put it in client code.** |
+| `APP_PASSCODE` | You choose it. What Aleena types once per device. A few words (e.g. `purple otter 2026`) beat a short PIN. |
+| `SESSION_SECRET` | A random string of 32+ characters: `openssl rand -base64 32` |
+| `ANTHROPIC_API_KEY` | console.anthropic.com. Server only. |
+| `AI_DAILY_LIMIT` | Max Claude calls per day for the whole app (default 40) |
 | `APP_TIMEZONE` | Aleena's IANA time zone, e.g. `America/New_York`. Makes "today" roll over at her midnight, not at UTC midnight. |
-
-Never put the Supabase **secret/service-role** key in this app. It doesn't need it.
+| `STUDENT_NAME` | Name on the home screen (default `Aleena`) |
 
 ### 3. Run locally
-
-```bash
-npm test
-```
-
-runs the checks for the pure logic (spaced review, drill planning, grading, question validation).
-
 
 ```bash
 npm install
 ```
 
 ```bash
+npm test
+```
+
+runs the checks for the pure logic (spaced review, drill planning, grading, question validation, passcode sessions).
+
+```bash
 npm run dev
 ```
 
-Open http://localhost:3000, enter an allowlisted email, and use the link or the code.
+Open http://localhost:3000 and enter the passcode.
 
 ### 4. Deploy to Vercel
 
-1. Push the repo to GitHub and import it in Vercel (framework preset: Next.js).
-2. Add the same environment variables under Project → Settings → Environment Variables.
-3. Deploy, then put the production URL into Supabase's Site URL and Redirect URLs (step 1.3).
-4. On her phone: open the site → Share → **Add to Home Screen** for an app-like icon.
+1. Import the GitHub repo in Vercel (framework preset: Next.js).
+2. Before the first deploy, add every variable from step 2 under **Environment Variables**.
+3. Deploy. Every push to `main` redeploys automatically.
+4. On her phone: open the site, enter the passcode, then Share → **Add to Home Screen** for an app-like icon.
+
+To change the passcode, update `APP_PASSCODE` in Vercel and redeploy. That signs out every device.
 
 ---
 
 ## How it works
 
-### Access control
-- `app_users` is the allowlist. `public.is_member()` checks the signed-in user's email against it.
-- Every table has RLS with `using (is_member())`. Data is shared between members, so the coach sees Aleena's progress.
-- `src/proxy.ts` refreshes the session and sends signed-out visitors to `/login`.
-- `src/lib/auth.ts` (`requireMember`) is the data access layer that every page and server action calls.
+### Access control (passcode mode)
+- **No accounts.** Entering `APP_PASSCODE` on `/login` sets a signed, httpOnly cookie that's valid for a year (`src/lib/session.ts`, HMAC-SHA256 via Web Crypto). A wrong guess waits 1.5 s. The signing key includes the passcode, so changing the passcode signs out every device.
+- **The proxy** (`src/proxy.ts`) checks the cookie on every request. It sends locked visitors to `/login`, and API calls get a 401.
+- **Database access.** The server uses the Supabase **secret** key, and `src/lib/auth.ts` (`requireMember`) is the data access layer every page, action and API route calls first. All rows are stored under one fixed student id (`STUDENT_ID`), so anyone with the passcode, including the coach, sees the same progress.
+- **The browser can't touch the database.** RLS is still on for every table, and the browser's publishable key can't read or write any of them. Screenshot uploads use a one-time signed upload URL from the server.
+- **Leftovers.** The `app_users` table and `is_member()` from the original email-login design are unused now. They're harmless, and they're kept in case email sign-in comes back.
 
 ### Skill ranking (feature 1)
 For each skill, accuracy = correct ÷ total over the **3 most recent tests** that include it, so older tests fade out as she improves. Skills are sorted weakest first. Ties go to the domain worth more questions on test day. Skills with no data are listed separately.
@@ -109,7 +99,7 @@ For each skill, accuracy = correct ÷ total over the **3 most recent tests** tha
 In the error log, a review asks her to re-solve the question, tap **Show answer**, and grade herself honestly (**Got it right** / **Missed it**). The rules live in `src/lib/spaced.ts`. Reviews are recorded only for items that are due, so a double tap can't skip a stage.
 
 ### Screenshots
-Phone screenshots are shrunk in the browser (max 1600px JPEG) and uploaded straight to the private `screenshots` bucket, because server actions cap request bodies at 1 MB. Pages show them through signed URLs that expire after an hour. Deleting an error also deletes its screenshot.
+Phone screenshots are shrunk in the browser (max 1600px JPEG) and uploaded straight to the private `screenshots` bucket through a one-time signed upload URL from the server, because server actions cap request bodies at 1 MB. Pages show them through signed URLs that expire after an hour. Deleting an error also deletes its screenshot.
 
 ### Daily drill (feature 3)
 1. **Reviews first.** Everything due in the error log, using the same review screen.
@@ -148,7 +138,7 @@ Past days show ✓ when done. The Nov 20 registration reminder shows on Home and
 - **Desmos tips** (`/desmos`): short how-tos for solving equations by graphing, intersections, parabola features, regressions, statistics, sliders, testing answer choices, and inequalities.
 
 ### Claude cost control
-`consume_ai_call(day, limit)` atomically increments `ai_usage` and returns `false` once the daily limit is reached. Server routes call it before every Claude request.
+`consume_ai_call(student_id, day, limit)` (callable only with the secret key) atomically increments `ai_usage` and returns `false` once the daily limit is reached. Server routes call it before every Claude request.
 
 ## Project structure
 
@@ -157,13 +147,13 @@ supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
   migrations/0003–0005            drill size, tutor storage + light days, flashcards
-  allowlist.example.sql
 src/
-  proxy.ts                        session refresh + signed-out redirect
+  proxy.ts                        passcode check on every request
   lib/
     env.ts  dates.ts  auth.ts     config, Dec 5 / Nov 20 dates, requireMember()
     skills.ts                     ranking logic (pure, no I/O)
-    supabase/{server,proxy}.ts    Supabase clients
+    session.ts                    signed passcode cookie
+    supabase/{server,client}.ts   secret-key server client; browser client for uploads
     spaced.ts                     1 → 3 → 7 day review rules (pure)
     errors.ts                     miss reasons, ErrorItem type
     supabase/client.ts            browser client (screenshot uploads only)
@@ -178,8 +168,8 @@ src/
     data/drill.ts                 today's session, focus skills, streak
   components/                     bottom-nav, tutor-panel, bar-list (charts), flash, confirm-button
   app/
-    login/                        magic link + 6-digit code
-    auth/confirm, auth/signout    route handlers
+    login/                        passcode form
+    auth/signout                  lock this device
     (app)/page.tsx                dashboard
     (app)/tests/                  test list, new-test form, server actions
     (app)/errors/                 log + charts, new, [id] detail, review session, actions

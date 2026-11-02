@@ -5,6 +5,7 @@ import { computeStreak } from "./drill/streak";
 import { pickDifficulty, plannedNewQuestions } from "./drill/plan";
 import { isCorrect, validateQuestion } from "./drill/validate";
 import { buildPlan, dayKind } from "./plan";
+import { createSession, passcodeMatches, verifySession } from "./session";
 const eq = (a: unknown, b: unknown, label: string) => {
   if (JSON.stringify(a) !== JSON.stringify(b)) { console.log("FAIL", label, a, "!=", b); process.exitCode = 1; }
 };
@@ -35,4 +36,20 @@ eq(validateQuestion({ ...base, choices: [], answer: "five" }, "math").ok, false,
 eq(validateQuestion({ ...base, choices: ["a", "b", "c", "d"], answer: "B" }, "rw").ok, false, "rw needs passage");
 eq(validateQuestion({ ...base, stem: "Find \\frac{1}{2} of x", choices: ["1", "2", "3", "4"], answer: "A" }, "math").ok, false, "latex");
 eq(validateQuestion({ ...base, choices: ["1", "2", "3", "4"], answer: "E" }, "math").ok, false, "bad letter");
-console.log(process.exitCode ? "some checks failed" : "all checks passed");
+async function sessionChecks() {
+  process.env.SESSION_SECRET = "test-secret-test-secret-test-secret-1234";
+  process.env.APP_PASSCODE = "maple river 42";
+  const t0 = Date.parse("2026-11-02T12:00:00Z");
+  const session = await createSession(t0);
+  eq(await verifySession(session, t0 + 1000), true, "fresh session valid");
+  eq(await verifySession(session, t0 + 366 * 86_400_000), false, "expired after a year");
+  eq(await verifySession(session.slice(0, -2) + "xx", t0), false, "tampered signature");
+  eq(await verifySession(session.replace(/^v1\.\d+/, `v1.${t0 + 999 * 86_400_000}`), t0), false, "extended expiry rejected");
+  eq(await verifySession(undefined), false, "no cookie");
+  eq(await passcodeMatches(" maple river 42 "), true, "passcode trims spaces");
+  eq(await passcodeMatches("maple river 43"), false, "wrong passcode");
+  process.env.APP_PASSCODE = "new passcode";
+  eq(await verifySession(session, t0 + 1000), false, "changing passcode signs everyone out");
+}
+
+sessionChecks().then(() => console.log(process.exitCode ? "some checks failed" : "all checks passed"));

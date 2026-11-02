@@ -103,6 +103,27 @@ export async function recordReview(id: string, correct: boolean) {
   return { stage: outcome.stage, cleared: outcome.cleared, nextReviewOn: outcome.nextReviewOn };
 }
 
+// Screenshots upload straight from the phone to Storage (server actions cap bodies at 1 MB),
+// through a one-time signed upload URL that only the unlocked app can get.
+export async function prepareScreenshotUpload(ext: string) {
+  await requireMember();
+  if (!["jpg", "png", "webp", "heic"].includes(ext)) throw new Error("Unsupported image type");
+  const supabase = await createClient();
+  const path = `errors/${crypto.randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage.from("screenshots").createSignedUploadUrl(path);
+  if (error) throw error;
+  return { path: data.path, token: data.token };
+}
+
+// Removes a screenshot she replaced or removed before saving (never one a saved miss uses).
+export async function discardScreenshot(path: string) {
+  await requireMember();
+  if (!SCREENSHOT_PATH.test(path)) return;
+  const supabase = await createClient();
+  const { data: used } = await supabase.from("error_log").select("id").eq("screenshot_path", path).maybeSingle();
+  if (!used) await supabase.storage.from("screenshots").remove([path]);
+}
+
 export async function deleteError(formData: FormData) {
   await requireMember();
   const supabase = await createClient();

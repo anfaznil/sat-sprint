@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { discardScreenshot, prepareScreenshotUpload } from "../actions";
 
 const MAX_SIDE = 1600;
 const MAX_BYTES = 5 * 1024 * 1024; // matches the bucket's file_size_limit
@@ -43,12 +44,13 @@ export function ScreenshotPicker({
       if (!EXT[type]) throw new Error("Use a PNG, JPEG, WebP or HEIC image.");
       if (body.size > MAX_BYTES) throw new Error("That image is over 5 MB.");
 
-      const next = `errors/${crypto.randomUUID()}.${EXT[type]}`;
-      const supabase = createClient();
-      const { error } = await supabase.storage.from("screenshots").upload(next, body, { contentType: type });
+      const { path: next, token } = await prepareScreenshotUpload(EXT[type]);
+      const { error } = await createClient()
+        .storage.from("screenshots")
+        .uploadToSignedUrl(next, token, body, { contentType: type });
       if (error) throw error;
 
-      if (path) await supabase.storage.from("screenshots").remove([path]);
+      if (path) await discardScreenshot(path);
       onChange(next);
       setPreview(URL.createObjectURL(body));
     } catch (e) {
@@ -61,7 +63,7 @@ export function ScreenshotPicker({
   }
 
   async function remove() {
-    if (path) await createClient().storage.from("screenshots").remove([path]);
+    if (path) await discardScreenshot(path);
     onChange("");
     setPreview(null);
   }

@@ -28,8 +28,9 @@ export default function MorePage() {
         ))}
       </ul>
       <form action="/auth/signout" method="post">
-        <button className="btn-ghost w-full text-sm">Sign out</button>
+        <button className="btn-ghost w-full text-sm">Lock this device</button>
       </form>
+      <p className="text-center text-xs text-muted">Locking asks for the passcode again. Your data stays saved.</p>
     </div>
   );
 }

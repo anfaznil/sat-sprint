@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { SESSION_COOKIE } from "@/lib/session";
 
+// "Lock" this device: forget the passcode session.
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  return NextResponse.redirect(new URL("/login", request.nextUrl.origin), { status: 303 });
+  const response = NextResponse.redirect(new URL("/login", request.nextUrl.origin), { status: 303 });
+  response.cookies.delete(SESSION_COOKIE);
+  return response;
 }

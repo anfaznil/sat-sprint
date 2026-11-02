@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { today } from "@/lib/dates";
+import { STUDENT_ID } from "@/lib/auth";
 
 export const MODEL = "claude-opus-5-5";
 // On a safety decline, the API retries on Anthropic's recommended fallback model.
@@ -26,10 +27,10 @@ export class AiLimitError extends Error {
   }
 }
 
-// Reserves one Claude call for the signed-in user today; throws once the daily limit is reached.
+// Reserves one Claude call for today; throws once the daily limit is reached.
 export async function spendAiCall() {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("consume_ai_call", { p_day: today(), p_limit: DAILY_LIMIT });
+  const { data, error } = await supabase.rpc("consume_ai_call", { p_user: STUDENT_ID, p_day: today(), p_limit: DAILY_LIMIT });
   if (error) throw error;
   if (!data) throw new AiLimitError();
 }

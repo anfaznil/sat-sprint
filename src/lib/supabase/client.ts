@@ -1,7 +1,8 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/env";
 
-// Browser client, used only for direct-to-Storage uploads (server actions cap bodies at 1 MB).
+// Browser client with the publishable key. It can't read or write any table (RLS); it's
+// only used to upload screenshots to a signed upload URL the server hands out.
 export function createClient() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_KEY);
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 }
