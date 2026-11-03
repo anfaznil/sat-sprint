@@ -31,6 +31,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    6. `supabase/migrations/0006_passcode_mode.sql`: passcode access (no Supabase accounts)
    7. `supabase/migrations/0007_section_focus.sql`: the "test focus" setting
    8. `supabase/migrations/0008_untagged_misses.sql`: lets drill misses save before they're tagged
+   9. `supabase/migrations/0009_flashcard_quiz.sql`: 75 SAT-style grammar questions
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -167,7 +168,7 @@ Level 1 → 2 takes 100 XP, and each level after takes 50 more than the last. Th
 If migration 0007 hasn't been run, the app treats the focus as "both" and the picker explains what's missing.
 
 ### Grammar cards and Desmos tips (feature 6)
-- **Grammar cards** (`/flashcards`): 25 original cards on commas, semicolons, colons, transitions, and subject-verb agreement, using the same 1 → 3 → 7 day review. Due cards come first, plus up to 6 new ones a session. There's progress per topic and a "browse all rules" list for light days.
+- **Grammar cards** (`/flashcards`): 25 rules on commas, semicolons, colons, transitions, and subject-verb agreement, tested like the SAT. Each rule has 3 original questions (`flashcard_questions`): a sentence with a blank and 4 choices, where the blank covers the words the choices start with. She taps an answer, it's graded on the server, and the rule appears as the explanation. Each review of a rule shows its next question, so the sentence is new each time. Right or wrong drives the same 1 → 3 → 7 day schedule, and a rule she gets right the first time starts at the 3-day step. Answer positions are balanced across A–D. Due rules come first, plus up to 6 new ones a session, with progress per topic and a "Study the rules" list for light days.
 - **Desmos tips** (`/desmos`): short how-tos for solving equations by graphing, intersections, parabola features, regressions, statistics, sliders, testing answer choices, and inequalities.
 
 ### Claude cost control
@@ -179,8 +180,8 @@ If migration 0007 hasn't been run, the app treats the focus as "both" and the pi
 supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
-  migrations/0003–0008            drill size, tutor storage + light days, flashcards,
-                                  passcode mode, test focus, untagged misses
+  migrations/0003–0009            drill size, tutor storage + light days, flashcards,
+                                  passcode mode, test focus, untagged misses, grammar quiz
 src/
   proxy.ts                        passcode check on every request
   lib/
