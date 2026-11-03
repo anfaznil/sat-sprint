@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ERROR_COLUMNS, type ErrorItem } from "@/lib/errors";
 import { today } from "@/lib/dates";
+import type { Focus } from "@/lib/skills";
 
 export async function getErrors() {
   const supabase = await createClient();
@@ -14,26 +15,25 @@ export async function getErrors() {
   return data as unknown as ErrorItem[];
 }
 
-export async function getDueErrors() {
+// Due reviews, optionally only for the section in focus (the others wait, still scheduled).
+export async function getDueErrors(focus: Focus = "both") {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("error_log")
-    .select(ERROR_COLUMNS)
-    .is("cleared_at", null)
-    .lte("next_review_on", today())
-    .order("next_review_on")
-    .order("created_at");
+  let query = supabase.from("error_log").select(ERROR_COLUMNS).is("cleared_at", null).lte("next_review_on", today());
+  if (focus !== "both") query = query.eq("section", focus);
+  const { data, error } = await query.order("next_review_on").order("created_at");
   if (error) throw error;
   return data as unknown as ErrorItem[];
 }
 
-export async function countDueErrors() {
+export async function countDueErrors(focus: Focus = "both") {
   const supabase = await createClient();
-  const { count, error } = await supabase
+  let query = supabase
     .from("error_log")
     .select("id", { count: "exact", head: true })
     .is("cleared_at", null)
     .lte("next_review_on", today());
+  if (focus !== "both") query = query.eq("section", focus);
+  const { count, error } = await query;
   if (error) throw error;
   return count ?? 0;
 }

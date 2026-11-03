@@ -1,5 +1,5 @@
 import type { Difficulty } from "@/lib/errors";
-import type { Domain, Skill, SkillStat } from "@/lib/skills";
+import { inFocus, type Domain, type Focus, type Skill, type SkillStat } from "@/lib/skills";
 import { isLightDay } from "@/lib/plan";
 
 export type FocusSkill = { skill: Skill; domain: Domain; accuracy: number | null };
@@ -13,13 +13,16 @@ export function plannedNewQuestions(dueReviews: number, day: string) {
   return Math.min(15, Math.max(8, 15 - Math.ceil(dueReviews / 2)));
 }
 
-// Her 3 weakest skills. With little test data, fill with untested skills from the
-// biggest domains, alternating sections so both get practice.
+// Her 3 weakest skills within the section focus. With little test data, fill with untested
+// skills from the biggest domains, alternating sections (when both are in focus).
 export function pickFocusSkills(
-  ranked: SkillStat[],
-  untested: { skill: Skill; domain: Domain }[],
+  allRanked: SkillStat[],
+  allUntested: { skill: Skill; domain: Domain }[],
+  sectionFocus: Focus = "both",
   count = 3,
 ): FocusSkill[] {
+  const ranked = allRanked.filter((s) => inFocus(s.domain.section, sectionFocus));
+  const untested = allUntested.filter((u) => inFocus(u.domain.section, sectionFocus));
   const focus: FocusSkill[] = ranked.slice(0, count).map((s) => ({ skill: s.skill, domain: s.domain, accuracy: s.accuracy }));
   if (focus.length >= count) return focus;
 

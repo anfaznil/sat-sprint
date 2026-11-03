@@ -4,7 +4,8 @@ import { requireMember } from "@/lib/auth";
 import { getSkillMap, getSkillResults } from "@/lib/data/skills";
 import { countDueErrors } from "@/lib/data/errors";
 import { getStreak, getTodayProgress } from "@/lib/data/drill";
-import { accuracyTone, rankSkills, SECTION_LABEL, type SkillStat } from "@/lib/skills";
+import { accuracyTone, FOCUS_LABEL, inFocus, rankSkills, SECTION_LABEL, type SkillStat } from "@/lib/skills";
+import { getFocus } from "@/lib/data/settings";
 import { daysBetween, REGISTRATION_DEADLINE, TEST_DATE, today } from "@/lib/dates";
 import { DAY_LABEL, dayKind } from "@/lib/plan";
 
@@ -18,14 +19,18 @@ export default function HomePage() {
 
 async function Dashboard() {
   const member = await requireMember();
+  const focus = await getFocus();
   const [{ domains, skills }, results, dueReviews, progress, streak] = await Promise.all([
     getSkillMap(),
     getSkillResults(),
-    countDueErrors(),
+    countDueErrors(focus),
     getTodayProgress(member.id),
     getStreak(member.id),
   ]);
-  const { ranked, untested } = rankSkills(domains, skills, results);
+  // Home follows the section focus; the other section's skills are hidden, not lost.
+  const all = rankSkills(domains, skills, results);
+  const ranked = all.ranked.filter((s) => inFocus(s.domain.section, focus));
+  const untested = all.untested.filter((u) => inFocus(u.domain.section, focus));
 
   const now = today();
   const daysLeft = daysBetween(now, TEST_DATE);
@@ -58,6 +63,15 @@ async function Dashboard() {
         )}
       </section>
 
+      {focus !== "both" && (
+        <Link href="/more#focus" className="flex items-center justify-between rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
+          <span>
+            🎯 Focusing on <strong>{FOCUS_LABEL[focus]}</strong> for this test
+          </span>
+          <span className="text-accent">Change</span>
+        </Link>
+      )}
+
       <DrillCard due={dueReviews} progress={progress} streak={streak} />
 
       {ranked.length === 0 ? (
@@ -67,7 +81,7 @@ async function Dashboard() {
           <FocusCard skills={ranked.slice(0, 3)} />
           <section className="card p-5">
             <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="font-semibold">All skills, weakest first</h2>
+              <h2 className="font-semibold">{focus === "both" ? "All skills" : `${FOCUS_LABEL[focus]} skills`}, weakest first</h2>
               <Link href="/tests/new" className="text-sm font-medium text-accent">
                 + Add test
               </Link>

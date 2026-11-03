@@ -1,4 +1,6 @@
 export type Section = "math" | "rw";
+// "both", or one section to concentrate on for this test date (superscoring).
+export type Focus = Section | "both";
 
 export type Domain = { id: string; section: Section; name: string; weight: number; sort: number };
 export type Skill = { id: string; domain_id: string; name: string; sort: number };
@@ -22,6 +24,11 @@ export type SkillStat = {
 };
 
 export const SECTION_LABEL: Record<Section, string> = { rw: "Reading & Writing", math: "Math" };
+export const FOCUS_LABEL: Record<Focus, string> = { both: "Both sections", rw: "Reading & Writing", math: "Math" };
+
+export function inFocus(section: Section, focus: Focus) {
+  return focus === "both" || section === focus;
+}
 
 // How many recent tests count toward a skill's accuracy. Older tests fade out as she improves.
 const RECENT_TESTS = 3;

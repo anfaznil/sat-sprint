@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { requireMember } from "@/lib/auth";
+import { getFocus } from "@/lib/data/settings";
+import { FocusPicker } from "./focus-picker";
 
 const LINKS = [
   { href: "/flashcards", icon: "🃏", title: "Grammar cards", detail: "Commas, semicolons, colons, transitions, agreement" },
@@ -7,10 +11,25 @@ const LINKS = [
   { href: "/tests/new", icon: "➕", title: "Add Bluebook results", detail: "After each Saturday test" },
 ];
 
+async function Focus() {
+  await requireMember();
+  return <FocusPicker current={await getFocus()} />;
+}
+
 export default function MorePage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold tracking-tight">More</h1>
+      <section id="focus" className="card scroll-mt-4 p-4">
+        <h2 className="font-semibold">🎯 Test focus</h2>
+        <p className="mb-3 mt-0.5 text-sm text-muted">
+          Superscoring? Pick one section for this test date. Misses from the other section stay in your error log and
+          come back when you switch.
+        </p>
+        <Suspense fallback={<div className="h-48 animate-pulse rounded-xl bg-line/50" />}>
+          <Focus />
+        </Suspense>
+      </section>
       <ul className="card divide-y divide-line">
         {LINKS.map((l) => (
           <li key={l.href}>

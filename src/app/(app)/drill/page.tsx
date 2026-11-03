@@ -4,6 +4,8 @@ import { requireMember } from "@/lib/auth";
 import { getDueErrors, signScreenshots } from "@/lib/data/errors";
 import { countAnswered, getFocusSkills, getStreak, getTodaySession } from "@/lib/data/drill";
 import { DrillRunner } from "./drill-runner";
+import { getFocus } from "@/lib/data/settings";
+import { FOCUS_LABEL } from "@/lib/skills";
 import { TEST_DATE, today } from "@/lib/dates";
 import { dayKind } from "@/lib/plan";
 
@@ -28,10 +30,11 @@ async function Drill() {
     );
   }
 
+  const sectionFocus = await getFocus();
   const [session, focus, due, streak] = await Promise.all([
     getTodaySession(member.id),
     getFocusSkills(),
-    getDueErrors(),
+    getDueErrors(sectionFocus),
     getStreak(member.id),
   ]);
   const [answered, urls] = await Promise.all([countAnswered(session.id), signScreenshots(due.map((d) => d.screenshot_path))]);
@@ -42,6 +45,14 @@ async function Drill() {
         <p className="mb-4 rounded-xl bg-accent-soft p-3 text-sm">
           📝 <strong>Saturday is practice test day.</strong> Take a full Bluebook test, then{" "}
           <Link href="/tests/new" className="font-medium text-accent underline">log your results</Link>. The drill below is optional today.
+        </p>
+      )}
+      {sectionFocus !== "both" && (
+        <p className="mb-3 text-xs text-muted">
+          🎯 Focus: <strong className="text-ink">{FOCUS_LABEL[sectionFocus]}</strong> only.{" "}
+          <Link href="/more#focus" className="underline">
+            Change
+          </Link>
         </p>
       )}
       <DrillRunner

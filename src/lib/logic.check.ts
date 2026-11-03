@@ -2,7 +2,8 @@
 // Run with: npm test
 import { applyReview, firstReview } from "./spaced";
 import { computeStreak } from "./drill/streak";
-import { pickDifficulty, plannedNewQuestions } from "./drill/plan";
+import { pickDifficulty, pickFocusSkills, plannedNewQuestions } from "./drill/plan";
+import type { Domain, Skill, SkillStat } from "./skills";
 import { isCorrect, validateQuestion } from "./drill/validate";
 import { buildPlan, dayKind } from "./plan";
 import { createSession, passcodeMatches, verifySession } from "./session";
@@ -36,6 +37,18 @@ eq(validateQuestion({ ...base, choices: [], answer: "five" }, "math").ok, false,
 eq(validateQuestion({ ...base, choices: ["a", "b", "c", "d"], answer: "B" }, "rw").ok, false, "rw needs passage");
 eq(validateQuestion({ ...base, stem: "Find \\frac{1}{2} of x", choices: ["1", "2", "3", "4"], answer: "A" }, "math").ok, false, "latex");
 eq(validateQuestion({ ...base, choices: ["1", "2", "3", "4"], answer: "E" }, "math").ok, false, "bad letter");
+// Section focus: drills only pick skills from the section in focus.
+const rw: Domain = { id: "craft", section: "rw", name: "Craft", weight: 0.28, sort: 1 };
+const math: Domain = { id: "algebra", section: "math", name: "Algebra", weight: 0.35, sort: 2 };
+const sk = (id: string, d: Domain): Skill => ({ id, domain_id: d.id, name: id, sort: 1 });
+const stat = (id: string, d: Domain, accuracy: number): SkillStat =>
+  ({ skill: sk(id, d), domain: d, correct: 0, total: 1, accuracy, latest: accuracy, previous: null, tests: 1 });
+const rankedFixture = [stat("m1", math, 0.2), stat("r1", rw, 0.3), stat("m2", math, 0.4), stat("r2", rw, 0.5)];
+const untestedFixture = [{ skill: sk("r3", rw), domain: rw }, { skill: sk("m3", math), domain: math }];
+eq(pickFocusSkills(rankedFixture, untestedFixture, "both").map((f) => f.skill.id), ["m1", "r1", "m2"], "focus both");
+eq(pickFocusSkills(rankedFixture, untestedFixture, "rw").map((f) => f.skill.id), ["r1", "r2", "r3"], "focus rw fills with untested rw");
+eq(pickFocusSkills([], untestedFixture, "math").map((f) => f.skill.id), ["m3"], "focus math, little data");
+
 async function sessionChecks() {
   process.env.SESSION_SECRET = "test-secret-test-secret-test-secret-1234";
   process.env.APP_PASSCODE = "maple river 42";

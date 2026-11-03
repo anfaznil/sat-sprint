@@ -29,6 +29,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    4. `supabase/migrations/0004_tutor_and_light_days.sql`: tutor message storage, light review days
    5. `supabase/migrations/0005_seed_flashcards.sql`: grammar flashcards
    6. `supabase/migrations/0006_passcode_mode.sql`: passcode access (no Supabase accounts)
+   7. `supabase/migrations/0007_section_focus.sql`: the "test focus" setting
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -133,6 +134,14 @@ Each assistant reply's raw content blocks are stored in `tutor_messages.blocks` 
 
 Past days show ✓ when done. The Nov 20 registration reminder shows on Home and on the plan until the deadline. A logged Saturday practice test counts toward the streak, just like a finished drill.
 
+### Test focus (superscoring)
+**More → Test focus** picks **Both sections**, **Reading & Writing**, or **Math** for the current test date. It's stored in `app_settings.focus_section`. With one section chosen:
+- **Drill:** the drill's 3 weakest skills and its due reviews come only from that section.
+- **Home:** the review count and skill ranking show only that section, with a "Focusing on…" banner.
+- **The other section:** its error-log items stay scheduled and visible in the error log. They come back into drills when the focus switches back.
+
+If migration 0007 hasn't been run, the app treats the focus as "both" and the picker explains what's missing.
+
 ### Grammar cards and Desmos tips (feature 6)
 - **Grammar cards** (`/flashcards`): 25 original cards on commas, semicolons, colons, transitions, and subject-verb agreement, using the same 1 → 3 → 7 day review. Due cards come first, plus up to 6 new ones a session. There's progress per topic and a "browse all rules" list for light days.
 - **Desmos tips** (`/desmos`): short how-tos for solving equations by graphing, intersections, parabola features, regressions, statistics, sliders, testing answer choices, and inequalities.
@@ -146,7 +155,8 @@ Past days show ✓ when done. The Nov 20 registration reminder shows on Home and
 supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
-  migrations/0003–0005            drill size, tutor storage + light days, flashcards
+  migrations/0003–0007            drill size, tutor storage + light days, flashcards,
+                                  passcode mode, test focus
 src/
   proxy.ts                        passcode check on every request
   lib/
@@ -166,6 +176,7 @@ src/
     data/skills.ts                skill map + results queries
     data/errors.ts                error log queries, signed screenshot URLs
     data/drill.ts                 today's session, focus skills, streak
+    data/settings.ts              test focus (both / R&W / Math)
   components/                     bottom-nav, tutor-panel, bar-list (charts), flash, confirm-button
   app/
     login/                        passcode form

@@ -6,13 +6,14 @@ import { computeStreak } from "@/lib/drill/streak";
 import { pickFocusSkills, plannedNewQuestions } from "@/lib/drill/plan";
 import { getSkillMap, getSkillResults } from "./skills";
 import { countDueErrors } from "./errors";
+import { getFocus } from "./settings";
 
 export type DrillSession = { id: string; drill_date: string; started_at: string; completed_at: string | null; planned_new: number };
 
 export async function getFocusSkills() {
-  const [{ domains, skills }, results] = await Promise.all([getSkillMap(), getSkillResults()]);
+  const [{ domains, skills }, results, focus] = await Promise.all([getSkillMap(), getSkillResults(), getFocus()]);
   const { ranked, untested } = rankSkills(domains, skills, results);
-  return pickFocusSkills(ranked, untested);
+  return pickFocusSkills(ranked, untested, focus);
 }
 
 // Today's session row, created on first visit with the day's question count fixed.
@@ -24,7 +25,7 @@ export async function getTodaySession(userId: string): Promise<DrillSession> {
   if (existing.error) throw existing.error;
   if (existing.data) return existing.data;
 
-  const planned = plannedNewQuestions(await countDueErrors(), day);
+  const planned = plannedNewQuestions(await countDueErrors(await getFocus()), day);
   const { error } = await supabase
     .from("drill_sessions")
     .upsert({ drill_date: day, planned_new: planned }, { onConflict: "created_by,drill_date", ignoreDuplicates: true });
