@@ -11,6 +11,9 @@
   --good: #1f9d6b;
   --warn: #d98a00;
   --bad: #d64545;
+  /* Section identity: Reading & Writing vs Math (distinct from status colors) */
+  --rw: #0e8f8a;
+  --math: #2f6bd8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +28,8 @@
     --good: #3fc78f;
     --warn: #f0a92e;
     --bad: #ef6b6b;
+    --rw: #3cc4bd;
+    --math: #6e9cf5;
   }
 }
 
@@ -39,6 +44,9 @@
   --color-good: var(--good);
   --color-warn: var(--warn);
   --color-bad: var(--bad);
+  --color-rw: var(--rw);
+  --color-math: var(--math);
+  --font-serif: var(--font-reading);
   --font-sans: var(--font-geist-sans);
 }
 
@@ -61,4 +69,28 @@ body {
   .btn-ghost {
     @apply inline-flex items-center justify-center rounded-xl border border-line bg-card px-4 py-3 font-medium text-ink transition active:scale-[0.98];
   }
+}
+
+/* Answer feedback and celebrations. Motion is skipped for people who ask for less. */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@keyframes rise {
+  from { opacity: 0.35; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@layer utilities {
+  .animate-pop { animation: pop 320ms ease-out; }
+  .animate-shake { animation: shake 360ms ease-in-out; }
+  .animate-rise { animation: rise 400ms ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop, .animate-shake, .animate-rise { animation: none; }
 }

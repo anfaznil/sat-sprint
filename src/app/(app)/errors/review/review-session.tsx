@@ -6,6 +6,9 @@ import { reasonInfo, type ErrorItem } from "@/lib/errors";
 import { formatDay } from "@/lib/dates";
 import { recordReview } from "../actions";
 import { TutorPanel } from "@/components/tutor-panel";
+import { Ico } from "@/components/ico";
+import { IconTile } from "@/components/icon-tile";
+import { Flag, Lightbulb, PartyPopper } from "lucide-react";
 
 type Result = { correct: boolean; cleared: boolean; nextReviewOn?: string | null };
 
@@ -31,7 +34,7 @@ export function ReviewSession({
   if (items.length === 0) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-4xl">🎉</p>
+        <IconTile icon={PartyPopper} tone="good" />
         <h1 className="mt-2 text-lg font-semibold">Nothing due right now</h1>
         <p className="mt-1 text-sm text-muted">Log misses from your practice tests and they&apos;ll show up here.</p>
       </section>
@@ -41,7 +44,7 @@ export function ReviewSession({
   if (index >= items.length) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-5xl">🏁</p>
+        <IconTile icon={Flag} tone="good" size="lg" />
         <h1 className="mt-3 text-xl font-bold">Review done!</h1>
         <p className="mt-1 text-muted">
           {tally.right} of {items.length} right
@@ -104,7 +107,7 @@ export function ReviewSession({
           </p>
           <h1 className="mt-1 font-bold leading-snug">{item.skills.name}</h1>
         </div>
-        {item.question_text && <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.question_text}</p>}
+        {item.question_text && <p className="whitespace-pre-wrap font-serif text-[17px] leading-[1.7]">{item.question_text}</p>}
         {shot && (
           // eslint-disable-next-line @next/next/no-img-element -- signed private URL
           <img src={shot} alt="Question screenshot" className="w-full rounded-xl border border-line" />
@@ -131,16 +134,16 @@ export function ReviewSession({
             </div>
           </div>
           <p className="text-sm text-muted">
-            Missed because: {reasonInfo(item.reason).icon} {reasonInfo(item.reason).label}
+            Missed because: <Ico icon={reasonInfo(item.reason).icon} /> {reasonInfo(item.reason).label}
           </p>
-          {item.notes && <p className="rounded-xl bg-accent-soft p-3 text-sm">💡 {item.notes}</p>}
+          {item.notes && <p className="flex gap-2 rounded-xl bg-accent-soft p-3 text-sm"><Ico icon={Lightbulb} className="mt-0.5 text-accent" /> {item.notes}</p>}
           <TutorPanel key={item.id} kind="error" id={item.id} />
 
           {result ? (
             <div className="space-y-3 pt-1">
               <p className={`text-center font-semibold ${result.correct ? "text-good" : "text-ink"}`}>
                 {result.cleared
-                  ? "Mastered! This one's off your list for good. 🎉"
+                  ? "Mastered! This one's off your list for good."
                   : result.correct
                     ? `Nice! Back on ${formatDay(result.nextReviewOn!, { weekday: "short", month: "short", day: "numeric" })} to lock it in.`
                     : "No worries. It comes back tomorrow, and that's how it sticks."}

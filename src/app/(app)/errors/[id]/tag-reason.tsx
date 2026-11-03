@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { REASONS, reasonInfo, type Reason } from "@/lib/errors";
 import { tagError } from "../actions";
+import { Ico } from "@/components/ico";
 
 // Shows why she missed it, with one-tap chips to tag or change it.
 export function TagReason({ id, reason: initial }: { id: string; reason: Reason | null }) {
@@ -30,7 +31,7 @@ export function TagReason({ id, reason: initial }: { id: string; reason: Reason 
   if (!editing) {
     return (
       <p className="text-sm">
-        {reasonInfo(reason).icon} <strong>{reasonInfo(reason).label}</strong>{" "}
+        <Ico icon={reasonInfo(reason).icon} /> <strong>{reasonInfo(reason).label}</strong>{" "}
         <button type="button" className="text-muted underline" onClick={() => setEditing(true)} disabled={pending}>
           change
         </button>
@@ -50,7 +51,7 @@ export function TagReason({ id, reason: initial }: { id: string; reason: Reason 
             aria-pressed={reason === r}
             className={`rounded-xl border p-2.5 text-left text-sm ${reason === r ? "border-accent bg-accent-soft" : "border-line"}`}
           >
-            {REASONS[r].icon} {REASONS[r].label}
+            <Ico icon={REASONS[r].icon} /> {REASONS[r].label}
           </button>
         ))}
       </div>

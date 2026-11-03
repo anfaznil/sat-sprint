@@ -1,3 +1,5 @@
+import { Ico } from "@/components/ico";
+import { Lightbulb } from "lucide-react";
 // Short, original how-tos for the Desmos calculator built into Bluebook's Math section.
 const TIPS: { title: string; when: string; steps: string[]; example?: string }[] = [
   {
@@ -87,7 +89,7 @@ export default function DesmosPage() {
               <li key={s}>{s}</li>
             ))}
           </ol>
-          {tip.example && <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm">💡 {tip.example}</p>}
+          {tip.example && <p className="mt-3 flex gap-2 rounded-xl bg-accent-soft p-3 text-sm"><Ico icon={Lightbulb} className="mt-0.5 text-accent" /> {tip.example}</p>}
         </details>
       ))}
       <section className="card p-4">

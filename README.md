@@ -136,6 +136,14 @@ Each assistant reply's raw content blocks are stored in `tutor_messages.blocks` 
 
 Past days show ✓ when done. The Nov 20 registration reminder shows on Home and on the plan until the deadline. A logged Saturday practice test counts toward the streak, just like a finished drill.
 
+### Look and feel
+- **App icon:** `src/app/icon.svg` (browser tab) and PNGs for the Home Screen (`src/app/apple-icon.png`, `public/icons/`), plus `src/app/manifest.ts`, so "Add to Home Screen" opens full-screen. To change the icon, edit and run `npx tsx --tsconfig tsconfig.json scripts/make-icons.tsx`.
+- **Icons:** Lucide line icons, drawn through `components/ico.tsx` and `icon-tile.tsx`.
+- **Section colors:** Reading & Writing is teal and Math is blue (`--rw` / `--math` in `globals.css`, `SectionTag`). They're kept separate from the good/warn/bad status colors.
+- **Question screen:** reads like Bluebook. Passages use a serif (Source Serif 4), and choices use lettered bubbles.
+- **Feedback:** a pop on a right answer, a shake on a wrong one, and a short vibration on Android. Finishing the drill brings confetti and the XP bar filling up, with a level-up badge when it crosses a level. All of the motion is skipped when the device asks for reduced motion.
+- **Tips while loading:** grammar, Desmos and strategy tips (`src/lib/tips.ts`) rotate while a fresh question is being written.
+
 ### XP and levels
 XP is computed from data the app already stores (`src/lib/xp.ts`, `src/lib/data/xp.ts`), so there's nothing extra to save or keep in sync:
 

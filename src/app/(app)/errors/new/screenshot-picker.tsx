@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { discardScreenshot, prepareScreenshotUpload } from "../actions";
+import { Ico } from "@/components/ico";
+import { Camera, CircleCheck } from "lucide-react";
 
 const MAX_SIDE = 1600;
 const MAX_BYTES = 5 * 1024 * 1024; // matches the bucket's file_size_limit
@@ -85,7 +87,7 @@ export function ScreenshotPicker({
           {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview */}
           <img src={preview} alt="Screenshot preview" className="h-20 w-20 rounded-lg border border-line object-cover" />
           <div className="flex flex-col items-start gap-1 text-sm">
-            <span className="font-medium text-good">✓ Screenshot attached</span>
+            <span className="flex items-center gap-1 font-medium text-good"><Ico icon={CircleCheck} /> Screenshot attached</span>
             <button type="button" className="text-muted underline" onClick={remove}>
               Remove
             </button>
@@ -93,7 +95,7 @@ export function ScreenshotPicker({
         </div>
       ) : (
         <label htmlFor="screenshot" className="btn-ghost w-full cursor-pointer gap-2 text-sm">
-          {busy ? "Uploading…" : <><span aria-hidden>📷</span>Add a screenshot (optional)</>}
+          {busy ? "Uploading…" : <><Camera aria-hidden className="size-4" />Add a screenshot (optional)</>}
         </label>
       )}
       {(problem || error) && <p className="mt-1 text-xs text-bad">{problem ?? error}</p>}

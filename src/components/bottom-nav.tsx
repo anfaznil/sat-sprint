@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BookX, CalendarDays, House, Menu, Zap } from "lucide-react";
 
 const TABS = [
-  { href: "/", label: "Home", icon: "🏠", match: [] as string[] },
-  { href: "/drill", label: "Drill", icon: "⚡", match: [] },
-  { href: "/errors", label: "Error log", icon: "📕", match: [] },
-  { href: "/plan", label: "Plan", icon: "🗓️", match: [] },
-  { href: "/more", label: "More", icon: "☰", match: ["/tests", "/flashcards", "/desmos"] },
+  { href: "/", label: "Home", icon: House, match: [] as string[] },
+  { href: "/drill", label: "Drill", icon: Zap, match: [] },
+  { href: "/errors", label: "Error log", icon: BookX, match: [] },
+  { href: "/plan", label: "Plan", icon: CalendarDays, match: [] },
+  { href: "/more", label: "More", icon: Menu, match: ["/tests", "/flashcards", "/desmos"] },
 ];
 
 export function BottomNav() {
@@ -28,10 +29,13 @@ export function NavBar({ path }: { path: string | null }) {
             <li key={tab.href} className="flex-1">
               <Link
                 href={tab.href}
-                className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${active ? "text-accent" : "text-muted"}`}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-1 pb-2 pt-1.5 text-[11px] font-medium ${active ? "text-accent" : "text-muted"}`}
               >
-                <span className="text-xl leading-none" aria-hidden>
-                  {tab.icon}
+                <span
+                  className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-accent-soft" : ""}`}
+                >
+                  <tab.icon aria-hidden className="size-5" strokeWidth={active ? 2.4 : 2} />
                 </span>
                 {tab.label}
               </Link>

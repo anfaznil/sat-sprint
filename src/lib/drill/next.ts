@@ -10,6 +10,7 @@ import { pickDifficulty } from "./plan";
 export type PlayerQuestion = {
   id: string;
   skillName: string;
+  section: "math" | "rw";
   difficulty: Difficulty;
   passage: string | null;
   stem: string;
@@ -104,6 +105,7 @@ export async function nextQuestion(member: Member, slot: number, exclude: string
     question: {
       id: question.id,
       skillName: target.skill.name,
+      section: target.domain.section,
       difficulty: question.difficulty,
       passage: question.passage,
       stem: question.stem,

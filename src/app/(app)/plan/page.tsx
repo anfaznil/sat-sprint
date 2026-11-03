@@ -4,6 +4,8 @@ import { requireMember } from "@/lib/auth";
 import { getActiveDays } from "@/lib/data/drill";
 import { daysBetween, formatDay, REGISTRATION_DEADLINE, TEST_DATE, today } from "@/lib/dates";
 import { buildPlan, DAY_LABEL, type PlanDay } from "@/lib/plan";
+import { Ico } from "@/components/ico";
+import { Backpack, CircleCheck, ClipboardList, Leaf, Pin, Zap } from "lucide-react";
 
 export default function PlanPage() {
   return (
@@ -35,13 +37,13 @@ async function Plan() {
       <section className="card overflow-hidden">
         <div className="bg-accent px-5 py-5 text-white">
           <p className="text-sm opacity-85">Countdown</p>
-          <p className="text-4xl font-bold tracking-tight">{daysLeft > 0 ? `${daysLeft} days` : daysLeft === 0 ? "Today!" : "Done 🎉"}</p>
+          <p className="text-4xl font-bold tracking-tight">{daysLeft > 0 ? `${daysLeft} days` : daysLeft === 0 ? "Today!" : "Done!"}</p>
           <p className="text-sm opacity-85">SAT · Saturday, December 5</p>
         </div>
         <p className="border-t border-line px-5 py-3 text-sm">
           {toRegister > 0 ? (
             <>
-              📌 <strong>Register by Nov 20</strong> ({toRegister} day{toRegister === 1 ? "" : "s"} left) on the{" "}
+              <Ico icon={Pin} className="mr-1 text-warn" /> <strong>Register by Nov 20</strong> ({toRegister} day{toRegister === 1 ? "" : "s"} left) on the{" "}
               <a className="text-accent underline" href="https://satsuite.collegeboard.org/sat/registration" target="_blank" rel="noreferrer">
                 College Board site
               </a>
@@ -49,10 +51,10 @@ async function Plan() {
             </>
           ) : toRegister === 0 ? (
             <>
-              📌 <strong>Registration closes today!</strong>
+              <Ico icon={Pin} className="mr-1 text-warn" /> <strong>Registration closes today!</strong>
             </>
           ) : (
-            <>📌 Registration closed Nov 20. Double-check your admission ticket in your College Board account.</>
+            <><Ico icon={Pin} className="mr-1 text-muted" /> Registration closed Nov 20. Double-check your admission ticket in your College Board account.</>
           )}
         </p>
       </section>
@@ -60,9 +62,9 @@ async function Plan() {
       <section className="card p-5 text-sm">
         <h2 className="mb-2 font-semibold">How the plan works</h2>
         <ul className="space-y-1 text-muted">
-          <li>📝 <strong className="text-ink">Saturdays:</strong> a full Bluebook practice test, like the real thing.</li>
-          <li>⚡ <strong className="text-ink">Other days:</strong> the 30-minute daily drill.</li>
-          <li>🌿 <strong className="text-ink">Dec 3–4:</strong> light review only. Rest your brain.</li>
+          <li><Ico icon={ClipboardList} className="mr-1.5 text-accent" /><strong className="text-ink">Saturdays:</strong> a full Bluebook practice test, like the real thing.</li>
+          <li><Ico icon={Zap} className="mr-1.5 text-accent" /><strong className="text-ink">Other days:</strong> the 30-minute daily drill.</li>
+          <li><Ico icon={Leaf} className="mr-1.5 text-good" /><strong className="text-ink">Dec 3–4:</strong> light review only. Rest your brain.</li>
         </ul>
       </section>
 
@@ -83,13 +85,13 @@ async function Plan() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">
-                      {label.icon} {label.title}
+                      <Ico icon={label.icon} className="mr-1 text-accent" /> {label.title}
                       {isToday && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs text-white">Today</span>}
                     </p>
                     <p className="text-xs text-muted">{d.note ?? label.detail}</p>
                   </div>
                   {done ? (
-                    <span className="shrink-0 text-sm font-semibold text-good" aria-label="Done">✓</span>
+                    <CircleCheck aria-label="Done" className="size-5 shrink-0 text-good" />
                   ) : isToday ? (
                     <Link href={ACTION[d.kind].href} className="btn-primary shrink-0 px-3 py-1.5 text-xs">
                       {ACTION[d.kind].label}
@@ -103,7 +105,7 @@ async function Plan() {
       ))}
 
       <section className="card p-5 text-sm">
-        <h2 className="mb-2 font-semibold">🎒 Test-day checklist</h2>
+        <h2 className="mb-2 flex items-center gap-1.5 font-semibold"><Ico icon={Backpack} className="text-accent" /> Test-day checklist</h2>
         <ul className="list-inside list-disc space-y-1 text-muted">
           <li>Device charged, with Bluebook updated and exam setup done the day before</li>
           <li>Admission ticket (from Bluebook)</li>

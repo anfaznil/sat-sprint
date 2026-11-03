@@ -1,12 +1,14 @@
 "use client";
 
 import { Fragment, useRef, useState } from "react";
+import { Ico } from "@/components/ico";
+import { GraduationCap, MessageCircleQuestion } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 // "Why was I wrong?": opens a tutor thread for an error-log item or drill question,
 // streams Claude's explanation, and allows a few follow-up questions.
-export function TutorPanel({ kind, id, label = "🤔 Why was I wrong?" }: { kind: "error" | "question"; id: string; label?: string }) {
+export function TutorPanel({ kind, id, label = "Why was I wrong?" }: { kind: "error" | "question"; id: string; label?: string }) {
   const [open, setOpen] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,6 +91,7 @@ export function TutorPanel({ kind, id, label = "🤔 Why was I wrong?" }: { kind
   if (!open) {
     return (
       <button type="button" onClick={start} className="btn-ghost w-full gap-2 text-sm">
+        <MessageCircleQuestion aria-hidden className="size-4 text-accent" />
         {label}
       </button>
     );
@@ -98,7 +101,7 @@ export function TutorPanel({ kind, id, label = "🤔 Why was I wrong?" }: { kind
 
   return (
     <section className="rounded-2xl border border-accent/30 bg-accent-soft/50 p-4">
-      <p className="mb-3 text-sm font-semibold text-accent">🧑‍🏫 Tutor</p>
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-accent"><Ico icon={GraduationCap} /> Tutor</p>
       <div className="space-y-3">
         {messages.map((m, i) =>
           m.role === "user" ? (

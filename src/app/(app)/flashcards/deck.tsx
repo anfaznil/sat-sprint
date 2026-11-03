@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { reviewFlashcard } from "./actions";
+import { IconTile } from "@/components/icon-tile";
+import { PartyPopper, Sparkles } from "lucide-react";
 
 export type Card = { id: string; topic: string; front: string; back: string; isNew?: boolean };
 
@@ -17,7 +19,7 @@ export function Deck({ cards: initial, topics }: { cards: Card[]; topics: Record
   if (cards.length === 0) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-4xl">✨</p>
+        <IconTile icon={Sparkles} />
         <p className="mt-2 font-semibold">No cards due right now</p>
         <p className="mt-1 text-sm text-muted">Everything you&apos;ve started is scheduled. Come back tomorrow.</p>
       </section>
@@ -27,7 +29,7 @@ export function Deck({ cards: initial, topics }: { cards: Card[]; topics: Record
   if (index >= cards.length) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-4xl">🎉</p>
+        <IconTile icon={PartyPopper} tone="good" />
         <p className="mt-2 text-lg font-semibold">Deck done</p>
         <p className="mt-1 text-sm text-muted">
           {right} of {cards.length} you knew. The rest come back tomorrow.

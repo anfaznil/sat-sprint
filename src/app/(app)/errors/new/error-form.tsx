@@ -5,6 +5,7 @@ import { DIFFICULTIES, REASONS, type Reason } from "@/lib/errors";
 import { SECTION_LABEL, type Domain, type Section, type Skill } from "@/lib/skills";
 import { logError, type LogErrorState } from "../actions";
 import { ScreenshotPicker } from "./screenshot-picker";
+import { Ico } from "@/components/ico";
 
 const CHOICES = ["A", "B", "C", "D"];
 
@@ -134,7 +135,7 @@ function Fields({ domains, skills, state, saving }: Props & { state: LogErrorSta
               }`}
             >
               <span className="block text-sm font-semibold">
-                {REASONS[r].icon} {REASONS[r].label}
+                <Ico icon={REASONS[r].icon} /> {REASONS[r].label}
               </span>
               <span className="block text-xs text-muted">{REASONS[r].hint}</span>
             </button>

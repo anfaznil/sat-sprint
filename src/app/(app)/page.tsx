@@ -4,12 +4,15 @@ import { requireMember } from "@/lib/auth";
 import { getSkillMap, getSkillResults } from "@/lib/data/skills";
 import { countDueErrors } from "@/lib/data/errors";
 import { getStreak, getTodayProgress } from "@/lib/data/drill";
-import { accuracyTone, FOCUS_LABEL, inFocus, rankSkills, SECTION_LABEL, type SkillStat } from "@/lib/skills";
+import { accuracyTone, FOCUS_LABEL, inFocus, rankSkills, type Focus, type SkillStat } from "@/lib/skills";
 import { getFocus } from "@/lib/data/settings";
 import { getXp } from "@/lib/data/xp";
-import { XpBar } from "@/components/xp-bar";
 import { daysBetween, REGISTRATION_DEADLINE, TEST_DATE, today } from "@/lib/dates";
-import { DAY_LABEL, dayKind } from "@/lib/plan";
+import { dayKind, type DayKind } from "@/lib/plan";
+import { levelFor } from "@/lib/xp";
+import { ArrowRight, Flame, Map, Pin, Plus, Star, Target, TrendingDown, TrendingUp } from "lucide-react";
+import { Ico } from "@/components/ico";
+import { SectionTag } from "@/components/section-tag";
 
 export default function HomePage() {
   return (
@@ -42,42 +45,26 @@ async function Dashboard() {
 
   return (
     <div className="space-y-5">
-      <section className="card overflow-hidden">
-        <div className="bg-accent px-5 py-5 text-white">
-          <p className="text-sm opacity-85">Hi {firstName} 👋</p>
-          <p className="mt-1 text-4xl font-bold tracking-tight">
-            {daysLeft > 0 ? `${daysLeft} days` : daysLeft === 0 ? "Test day!" : "Done!"}
-          </p>
-          {daysLeft > 0 && <p className="text-sm opacity-85">until the SAT on Saturday, Dec 5</p>}
-        </div>
-        {daysLeft >= 0 && (
-          <Link href="/plan" className="flex items-center justify-between border-t border-line px-5 py-3 text-sm">
-            <span>
-              Today: {DAY_LABEL[dayKind(now)].icon} <strong>{DAY_LABEL[dayKind(now)].title}</strong>
-            </span>
-            <span className="text-accent">Plan →</span>
-          </Link>
-        )}
-        {daysToRegister >= 0 && (
-          <p className="border-t border-line px-5 py-3 text-sm text-ink">
-            📌 Registration closes <strong>Nov 20</strong>
-            {daysToRegister === 0 ? " (today!)" : ` (${daysToRegister} day${daysToRegister === 1 ? "" : "s"} left)`}.
-          </p>
-        )}
-      </section>
+      <Hero
+        firstName={firstName}
+        daysLeft={daysLeft}
+        kind={dayKind(now)}
+        focus={focus}
+        due={dueReviews}
+        progress={progress}
+        streak={streak}
+        xp={xp}
+      />
 
-      {focus !== "both" && (
-        <Link href="/more#focus" className="flex items-center justify-between rounded-xl bg-accent-soft px-4 py-2.5 text-sm">
+      {daysToRegister >= 0 && (
+        <p className="flex items-center gap-2 rounded-xl border border-warn/30 bg-warn/10 px-4 py-2.5 text-sm">
+          <Ico icon={Pin} className="text-warn" />
           <span>
-            🎯 Focusing on <strong>{FOCUS_LABEL[focus]}</strong> for this test
+            Register by <strong>Nov 20</strong>
+            {daysToRegister === 0 ? " (today!)" : ` · ${daysToRegister} day${daysToRegister === 1 ? "" : "s"} left`}
           </span>
-          <span className="text-accent">Change</span>
-        </Link>
+        </p>
       )}
-
-      <XpBar xp={xp} />
-
-      <DrillCard due={dueReviews} progress={progress} streak={streak} />
 
       {ranked.length === 0 ? (
         <EmptyState />
@@ -85,10 +72,10 @@ async function Dashboard() {
         <>
           <FocusCard skills={ranked.slice(0, 3)} />
           <section className="card p-5">
-            <div className="mb-4 flex items-baseline justify-between">
+            <div className="mb-4 flex items-baseline justify-between gap-3">
               <h2 className="font-semibold">{focus === "both" ? "All skills" : `${FOCUS_LABEL[focus]} skills`}, weakest first</h2>
-              <Link href="/tests/new" className="text-sm font-medium text-accent">
-                + Add test
+              <Link href="/tests/new" className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-medium text-accent">
+                <Ico icon={Plus} /> Add test
               </Link>
             </div>
             <ol className="space-y-4">
@@ -107,8 +94,9 @@ async function Dashboard() {
           </summary>
           <ul className="mt-3 space-y-1.5 text-sm text-muted">
             {untested.map(({ skill, domain }) => (
-              <li key={skill.id}>
-                {skill.name} <span className="opacity-70">· {SECTION_LABEL[domain.section]}</span>
+              <li key={skill.id} className="flex items-center justify-between gap-2">
+                <span>{skill.name}</span>
+                <SectionTag section={domain.section} short />
               </li>
             ))}
           </ul>
@@ -118,50 +106,113 @@ async function Dashboard() {
   );
 }
 
-function DrillCard({
+type Cta = { href: string; title: string; detail: string; done?: boolean };
+
+// What to do today, as one button: the drill, the Saturday practice test, or rest.
+function todaysCta(kind: DayKind, due: number, progress: Awaited<ReturnType<typeof getTodayProgress>>): Cta {
+  if (kind === "test") return { href: "/plan#test-day", title: "Good luck today!", detail: "Test-day checklist" };
+  if (progress.completed) {
+    return {
+      href: "/flashcards",
+      title: "Today's drill is done",
+      detail: `${progress.answered > 0 ? `${progress.score}/${progress.answered} right · ` : ""}Bonus: grammar cards`,
+      done: true,
+    };
+  }
+  if (kind === "practice") return { href: "/tests/new", title: "Practice test day", detail: "Full Bluebook test, then log results" };
+  if (kind === "light") return { href: "/drill", title: "Light review", detail: due > 0 ? `${due} quick review${due === 1 ? "" : "s"}` : "Grammar cards and rest" };
+  if (progress.started && progress.answered > 0) {
+    return { href: "/drill", title: "Continue today's drill", detail: `${progress.answered} of ${progress.planned} done · ${progress.score} right` };
+  }
+  return {
+    href: "/drill",
+    title: "Start today's drill",
+    detail: due > 0 ? `${due} review${due === 1 ? "" : "s"} + new questions · ~30 min` : "New questions on your focus skills · ~30 min",
+  };
+}
+
+function Hero({
+  firstName,
+  daysLeft,
+  kind,
+  focus,
   due,
   progress,
   streak,
+  xp,
 }: {
+  firstName: string;
+  daysLeft: number;
+  kind: DayKind;
+  focus: Focus;
   due: number;
   progress: Awaited<ReturnType<typeof getTodayProgress>>;
   streak: number;
+  xp: number;
 }) {
-  const status = progress.completed
-    ? `Done for today ✓${progress.answered > 0 ? ` · ${progress.score}/${progress.answered} right` : ""}`
-    : progress.started && progress.answered > 0
-      ? `${progress.answered} of ${progress.planned} questions done · ${progress.score} right`
-      : due > 0
-        ? `${due} review${due === 1 ? "" : "s"} + new questions · ~30 min`
-        : "New questions on your focus skills · ~30 min";
+  const cta = todaysCta(kind, due, progress);
+  const { level, into, span } = levelFor(xp);
   return (
-    <section className="card p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="font-semibold">⚡ Today&apos;s drill</p>
-          <p className="text-sm text-muted">{status}</p>
+    <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#7a6bf0] to-[#4a3bc4] text-white shadow-lg shadow-accent/20">
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-white/85">Hi {firstName}!</p>
+          {focus !== "both" && (
+            <Link href="/more#focus" className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium">
+              <Ico icon={Target} /> {FOCUS_LABEL[focus]} focus
+            </Link>
+          )}
         </div>
-        {!progress.completed && (
-          <Link href="/drill" className="btn-primary shrink-0 px-4 py-2 text-sm">
-            {progress.started && progress.answered > 0 ? "Continue" : "Start"}
-          </Link>
-        )}
-      </div>
-      <p className="mt-3 border-t border-line pt-3 text-sm">
-        {streak > 0 ? (
-          <>
-            🔥 <strong>{streak}-day streak</strong>
-            {!progress.completed && <span className="text-muted">. Keep it going today!</span>}
-          </>
-        ) : (
-          <span className="text-muted">🔥 Finish today&apos;s drill to start a streak.</span>
-        )}
-      </p>
-      {!progress.completed && due === 0 && (
-        <Link href="/errors/new" className="mt-2 block text-sm font-medium text-accent">
-          + Log a miss from a practice test
+        <p className="mt-2 text-5xl font-bold tracking-tight tabular-nums">
+          {daysLeft > 0 ? (
+            <>
+              {daysLeft}
+              <span className="ml-1.5 text-xl font-semibold text-white/85">days</span>
+            </>
+          ) : daysLeft === 0 ? (
+            "Test day!"
+          ) : (
+            "Done!"
+          )}
+        </p>
+        {daysLeft > 0 && <p className="text-sm text-white/80">until the SAT · Saturday, Dec 5</p>}
+
+        <Link
+          href={cta.href}
+          className={`mt-5 flex items-center justify-between gap-3 rounded-2xl px-4 py-3.5 shadow-md transition active:scale-[0.98] ${
+            cta.done ? "bg-white/15 text-white" : "bg-white text-[#1d1b2c]"
+          }`}
+        >
+          <span className="min-w-0">
+            <span className={`block text-base font-semibold ${cta.done ? "" : "text-[#4a3bc4]"}`}>{cta.title}</span>
+            <span className={`block truncate text-xs ${cta.done ? "text-white/80" : "text-[#6b6880]"}`}>{cta.detail}</span>
+          </span>
+          <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${cta.done ? "bg-white/20" : "bg-[#5b4bdb] text-white"}`}>
+            <ArrowRight aria-hidden className="size-5" />
+          </span>
         </Link>
-      )}
+      </div>
+
+      <div className="grid grid-cols-2 divide-x divide-white/15 border-t border-white/15 text-sm">
+        <div className="flex items-center gap-2 px-4 py-3">
+          <Flame aria-hidden className={`size-5 ${streak > 0 ? "fill-orange-300 text-orange-300" : "text-white/60"}`} />
+          <span>
+            <span className="block font-semibold leading-tight">{streak}-day streak</span>
+            <span className="block text-xs text-white/75">{streak > 0 ? "Keep it going" : "Start one today"}</span>
+          </span>
+        </div>
+        <div className="px-4 py-3" aria-label={`Level ${level}, ${into} of ${span} XP`}>
+          <span className="flex items-center gap-1.5 font-semibold leading-tight">
+            <Star aria-hidden className="size-4 fill-amber-300 text-amber-300" /> Level {level}
+          </span>
+          <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-white/20">
+            <span className="block h-full rounded-full bg-amber-300" style={{ width: `${Math.max(4, (into / span) * 100)}%` }} />
+          </span>
+          <span className="mt-1 block text-[11px] text-white/75">
+            {into} / {span} XP
+          </span>
+        </div>
+      </div>
     </section>
   );
 }
@@ -179,8 +230,8 @@ function FocusCard({ skills }: { skills: SkillStat[] }) {
             </span>
             <div className="min-w-0">
               <p className="truncate font-medium">{s.skill.name}</p>
-              <p className="text-xs text-muted">
-                {SECTION_LABEL[s.domain.section]} · {Math.round(s.accuracy * 100)}% correct
+              <p className="flex items-center gap-1.5 text-xs text-muted">
+                <SectionTag section={s.domain.section} short /> {Math.round(s.accuracy * 100)}% correct
               </p>
             </div>
           </li>
@@ -199,12 +250,12 @@ function SkillRow({ stat }: { stat: SkillStat }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium leading-snug">{stat.skill.name}</p>
-          <p className="text-xs text-muted">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted">
+            <SectionTag section={stat.domain.section} short />
             {stat.domain.name} · {stat.correct}/{stat.total}
             {trend !== null && trend !== 0 && (
-              <span className={trend > 0 ? "text-good" : "text-bad"}>
-                {" "}
-                {trend > 0 ? "▲" : "▼"} since last test
+              <span className={`flex items-center gap-0.5 ${trend > 0 ? "text-good" : "text-bad"}`}>
+                <Ico icon={trend > 0 ? TrendingUp : TrendingDown} /> since last test
               </span>
             )}
           </p>
@@ -221,7 +272,9 @@ function SkillRow({ stat }: { stat: SkillStat }) {
 function EmptyState() {
   return (
     <section className="card p-6 text-center">
-      <p className="text-4xl">🗺️</p>
+      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-accent-soft text-accent">
+        <Map aria-hidden className="size-7" />
+      </span>
       <h2 className="mt-2 text-lg font-semibold">Let&apos;s map your skills</h2>
       <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
         Enter your results from a Bluebook practice test and we&apos;ll show exactly where your points are hiding.
@@ -236,7 +289,7 @@ function EmptyState() {
 function DashboardSkeleton() {
   return (
     <div className="space-y-5" aria-busy>
-      <div className="card h-36 animate-pulse" />
+      <div className="h-64 animate-pulse rounded-3xl bg-accent/30" />
       <div className="card h-52 animate-pulse" />
     </div>
   );

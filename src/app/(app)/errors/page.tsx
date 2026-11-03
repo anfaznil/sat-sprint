@@ -4,9 +4,13 @@ import { requireMember } from "@/lib/auth";
 import { getErrors } from "@/lib/data/errors";
 import { REASONS, reasonInfo, UNTAGGED, type ErrorItem, type Reason } from "@/lib/errors";
 import { formatDay, today } from "@/lib/dates";
-import { SECTION_LABEL } from "@/lib/skills";
+import { SectionTag } from "@/components/section-tag";
 import { BarList } from "@/components/bar-list";
 import { Flash } from "@/components/flash";
+import { Ico } from "@/components/ico";
+import type { LucideIcon } from "lucide-react";
+import { IconTile } from "@/components/icon-tile";
+import { BookX, PartyPopper, Plus } from "lucide-react";
 
 export default function ErrorsPage() {
   return (
@@ -14,7 +18,8 @@ export default function ErrorsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Error log</h1>
         <Link href="/errors/new" className="btn-primary px-3.5 py-2 text-sm">
-          + Log a miss
+          <Ico icon={Plus} className="mr-1" />
+          Log a miss
         </Link>
       </div>
       <Suspense>
@@ -35,7 +40,7 @@ async function ErrorLog() {
   if (items.length === 0) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-4xl">📕</p>
+        <IconTile icon={BookX} />
         <h2 className="mt-2 text-lg font-semibold">Your miss collection starts here</h2>
         <p className="mx-auto mt-1 max-w-xs text-sm text-muted">
           Every question you miss on a practice test is a point you can win back. Log it, and it comes back for review in 1, 3, then 7 days.
@@ -52,7 +57,7 @@ async function ErrorLog() {
   const due = active.filter((i) => i.next_review_on <= now);
   const nextUp = active.find((i) => i.next_review_on > now);
 
-  const byReason: { label: string; icon: string; value: number }[] = (Object.keys(REASONS) as Reason[]).map((r) => ({
+  const byReason: { label: string; icon: LucideIcon; value: number }[] = (Object.keys(REASONS) as Reason[]).map((r) => ({
     label: REASONS[r].label,
     icon: REASONS[r].icon,
     value: items.filter((i) => i.reason === r).length,
@@ -81,7 +86,7 @@ async function ErrorLog() {
           </>
         ) : (
           <div>
-            <p className="font-semibold">All caught up 🎉</p>
+            <p className="flex items-center gap-1.5 font-semibold"><Ico icon={PartyPopper} className="text-good" /> All caught up</p>
             <p className="text-sm text-muted">
               {nextUp ? `Next review: ${formatDay(nextUp.next_review_on, { weekday: "short", month: "short", day: "numeric" })}` : "Nothing scheduled."}
             </p>
@@ -167,10 +172,13 @@ function ErrorRow({ item, now }: { item: ErrorItem; now: string }) {
             {item.cleared_at ? "Mastered" : isDue ? "Due" : formatDay(item.next_review_on)}
           </span>
         </div>
-        <p className="mt-1 line-clamp-2 text-sm text-muted">{item.question_text || "📷 Screenshot"}</p>
-        <p className="mt-2 text-xs text-muted">
-          {reasonInfo(item.reason).icon} {reasonInfo(item.reason).label} · {item.difficulty} · {SECTION_LABEL[item.section]}
-          {!item.cleared_at && ` · step ${item.stage} of 3`}
+        <p className="mt-1 line-clamp-2 text-sm text-muted">{item.question_text || "Screenshot"}</p>
+        <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted">
+          <SectionTag section={item.section} short />
+          <span>
+            <Ico icon={reasonInfo(item.reason).icon} /> {reasonInfo(item.reason).label} · {item.difficulty}
+            {!item.cleared_at && ` · step ${item.stage} of 3`}
+          </span>
         </p>
       </Link>
     </li>

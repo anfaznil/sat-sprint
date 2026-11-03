@@ -1,13 +1,15 @@
-export const REASONS = {
-  careless: { label: "Careless", hint: "Knew it, slipped up", icon: "🙈" },
-  concept_gap: { label: "Concept gap", hint: "Didn't know how", icon: "🧩" },
-  timing: { label: "Timing", hint: "Rushed or ran out", icon: "⏱️" },
-  trap: { label: "Fell for a trap", hint: "Tempting wrong answer", icon: "🪤" },
-} as const;
+import { EyeOff, Magnet, Puzzle, Tag, Timer, type LucideIcon } from "lucide-react";
+
+export const REASONS: Record<"careless" | "concept_gap" | "timing" | "trap", { label: string; hint: string; icon: LucideIcon }> = {
+  careless: { label: "Careless", hint: "Knew it, slipped up", icon: EyeOff },
+  concept_gap: { label: "Concept gap", hint: "Didn't know how", icon: Puzzle },
+  timing: { label: "Timing", hint: "Rushed or ran out", icon: Timer },
+  trap: { label: "Fell for a trap", hint: "Tempting wrong answer", icon: Magnet },
+};
 export type Reason = keyof typeof REASONS;
 
 // Drill misses are saved before she tags them, so a reason can be missing.
-export const UNTAGGED = { label: "Not tagged yet", hint: "Tag it to spot patterns", icon: "🏷️" };
+export const UNTAGGED = { label: "Not tagged yet", hint: "Tag it to spot patterns", icon: Tag };
 export function reasonInfo(reason: Reason | null) {
   return reason ? REASONS[reason] : UNTAGGED;
 }

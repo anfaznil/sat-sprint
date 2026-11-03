@@ -5,6 +5,11 @@ import { REASONS, type Reason } from "@/lib/errors";
 import type { NextResult, PlayerQuestion } from "@/lib/drill/next";
 import { answerQuestion, tagDrillMiss, type AnswerResult } from "./actions";
 import { TutorPanel } from "@/components/tutor-panel";
+import { SectionTag } from "@/components/section-tag";
+import { TIPS } from "@/lib/tips";
+import { Ico } from "@/components/ico";
+import { IconTile } from "@/components/icon-tile";
+import { BookCheck, Check, Lightbulb, X, WifiOff } from "lucide-react";
 
 const LETTERS = ["A", "B", "C", "D"];
 
@@ -81,6 +86,8 @@ export function QuestionPlayer({
       try {
         const r = await answerQuestion(question.id, answer, (Date.now() - shownAt.current) / 1000);
         setResult(r);
+        // A tiny buzz on Android for a right answer (iPhone ignores this).
+        if (r.correct) navigator.vibrate?.(35);
         onProgress(r.answered, r.score);
       } catch {
         setError("Couldn't save your answer. Check your connection and tap again.");
@@ -116,7 +123,7 @@ export function QuestionPlayer({
   if (error && !question) {
     return (
       <section className="card space-y-3 p-6 text-center">
-        <p className="text-3xl">😕</p>
+        <IconTile icon={WifiOff} tone="muted" />
         <p className="text-sm">{error}</p>
         <button className="btn-primary" onClick={retry}>
           Try again
@@ -125,29 +132,25 @@ export function QuestionPlayer({
     );
   }
 
-  if (!question) {
-    return (
-      <section className="card space-y-3 p-6 text-center" aria-busy>
-        <div className="mx-auto size-8 animate-spin rounded-full border-4 border-accent-soft border-t-accent" />
-        <p className="font-medium">Getting your next question…</p>
-        <p className="text-sm text-muted">Brand-new ones take a few seconds to write.</p>
-      </section>
-    );
-  }
+  if (!question) return <Loading slot={slot} />;
 
   const multipleChoice = question.choices !== null;
   const answerIndex = result ? LETTERS.indexOf(result.answer) : -1;
 
   return (
     <div className="space-y-4">
-      <section className="card space-y-4 p-5">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">
-          {question.skillName} · {question.difficulty}
-        </p>
+      <section className="card overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-line px-5 py-2.5">
+          <SectionTag section={question.section} short />
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted">{question.skillName}</span>
+          <Difficulty level={question.difficulty} />
+        </div>
         {question.passage && (
-          <p className="whitespace-pre-wrap rounded-xl bg-bg p-4 text-[15px] leading-relaxed">{question.passage}</p>
+          <p className="whitespace-pre-wrap border-b border-line px-5 py-5 font-serif text-[17px] leading-[1.7]">
+            {question.passage}
+          </p>
         )}
-        <p className="whitespace-pre-wrap font-medium leading-relaxed">{question.stem}</p>
+        <p className="whitespace-pre-wrap px-5 py-4 text-[16px] font-semibold leading-relaxed">{question.stem}</p>
       </section>
 
       {multipleChoice ? (
@@ -161,24 +164,33 @@ export function QuestionPlayer({
                 <button
                   disabled={Boolean(result) || pending}
                   onClick={() => submit(letter)}
-                  className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition active:scale-[0.99] ${
+                  className={`flex w-full items-start gap-3 rounded-xl border-2 bg-card p-3 text-left transition active:scale-[0.99] ${
                     isAnswer
-                      ? "border-good bg-good/10"
+                      ? "animate-pop border-good bg-good/10"
                       : isWrongPick
-                        ? "border-bad bg-bad/10"
+                        ? "animate-shake border-bad bg-bad/10"
                         : pending && chosen === letter
                           ? "border-accent bg-accent-soft"
-                          : "border-line bg-card"
+                          : result
+                            ? "border-line opacity-55"
+                            : "border-line"
                   }`}
                 >
+                  {/* Bluebook-style answer bubble */}
                   <span
-                    className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                      isAnswer ? "bg-good text-white" : isWrongPick ? "bg-bad text-white" : "bg-accent-soft text-accent"
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                      isAnswer
+                        ? "border-good bg-good text-white"
+                        : isWrongPick
+                          ? "border-bad bg-bad text-white"
+                          : pending && chosen === letter
+                            ? "border-accent bg-accent text-white"
+                            : "border-ink/70 text-ink"
                     }`}
                   >
-                    {isAnswer ? "✓" : isWrongPick ? "✗" : letter}
+                    {isAnswer ? <Check aria-label="Correct" className="size-4" strokeWidth={3} /> : isWrongPick ? <X aria-label="Your answer" className="size-4" strokeWidth={3} /> : letter}
                   </span>
-                  <span className="whitespace-pre-wrap pt-0.5 text-[15px]">{choice}</span>
+                  <span className="whitespace-pre-wrap pt-0.5 text-[15px] leading-snug">{choice}</span>
                 </button>
               </li>
             );
@@ -208,16 +220,16 @@ export function QuestionPlayer({
 
       {result && (
         <section className="card space-y-3 p-5">
-          <p className={`text-lg font-bold ${result.correct ? "text-good" : "text-ink"}`}>
+          <p className={`animate-rise text-lg font-bold ${result.correct ? "text-good" : "text-ink"}`}>
             {result.correct ? "✓ Correct!" : `Not quite. The answer is ${result.answer}.`}
           </p>
           <p className="text-[15px] leading-relaxed">{result.explanation}</p>
-          <TutorPanel key={question.id} kind="question" id={question.id} label={result.correct ? "🤔 Explain it more" : undefined} />
+          <TutorPanel key={question.id} kind="question" id={question.id} label={result.correct ? "Explain it more" : undefined} />
 
           {!result.correct && (
             <div className="space-y-2 border-t border-line pt-3">
               {result.savedToLog || missTag ? (
-                <p className="text-sm text-good">📕 Saved to your error log. It comes back tomorrow.</p>
+                <p className="flex items-center gap-1.5 text-sm text-good"><Ico icon={BookCheck} /> Saved to your error log. It comes back tomorrow.</p>
               ) : (
                 <p className="text-sm text-muted">Tag why you missed it to save it to your error log.</p>
               )}
@@ -232,7 +244,7 @@ export function QuestionPlayer({
                     className={`rounded-xl border p-2.5 text-left text-sm ${missTag === r ? "border-accent bg-accent-soft" : "border-line"}`}
                     onClick={() => tagMiss(r)}
                   >
-                    {REASONS[r].icon} {REASONS[r].label}
+                    <Ico icon={REASONS[r].icon} /> {REASONS[r].label}
                   </button>
                 ))}
               </div>
@@ -245,5 +257,41 @@ export function QuestionPlayer({
       )}
       {error && <p className="text-center text-sm text-bad">{error}</p>}
     </div>
+  );
+}
+
+function Difficulty({ level }: { level: "easy" | "medium" | "hard" }) {
+  const filled = level === "easy" ? 1 : level === "medium" ? 2 : 3;
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium capitalize text-muted" aria-label={`Difficulty: ${level}`}>
+      <span className="flex gap-0.5" aria-hidden>
+        {[1, 2, 3].map((n) => (
+          <span key={n} className={`h-2.5 w-1 rounded-full ${n <= filled ? "bg-accent" : "bg-line"}`} />
+        ))}
+      </span>
+      {level}
+    </span>
+  );
+}
+
+// While a question loads (fresh ones take a few seconds to write), show a quick tip.
+function Loading({ slot }: { slot: number }) {
+  const [offset, setOffset] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setOffset((o) => o + 1), 6000);
+    return () => clearInterval(id);
+  }, []);
+  const tip = TIPS[(slot * 5 + offset) % TIPS.length];
+  return (
+    <section className="card space-y-4 p-6 text-center" aria-busy>
+      <div className="mx-auto size-8 animate-spin rounded-full border-4 border-accent-soft border-t-accent" />
+      <p className="font-medium">Getting your next question…</p>
+      <div key={offset} className="animate-rise rounded-2xl bg-accent-soft/70 p-4 text-left">
+        <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-accent">
+          <Lightbulb aria-hidden className="size-3.5" /> {tip.kind} tip
+        </p>
+        <p className="text-[15px] leading-relaxed">{tip.text}</p>
+      </div>
+    </section>
   );
 }

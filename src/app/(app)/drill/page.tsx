@@ -9,6 +9,9 @@ import { getXp } from "@/lib/data/xp";
 import { FOCUS_LABEL } from "@/lib/skills";
 import { TEST_DATE, today } from "@/lib/dates";
 import { dayKind } from "@/lib/plan";
+import { Ico } from "@/components/ico";
+import { IconTile } from "@/components/icon-tile";
+import { ClipboardList, Target } from "lucide-react";
 
 export default function DrillPage() {
   return (
@@ -24,7 +27,7 @@ async function Drill() {
   if (kind === "test" || today() > TEST_DATE) {
     return (
       <section className="card p-6 text-center">
-        <p className="text-5xl">🎯</p>
+        <IconTile icon={Target} size="lg" />
         <h1 className="mt-3 text-xl font-bold">{kind === "test" ? "It's test day!" : "The SAT is done!"}</h1>
         <p className="mt-1 text-muted">{kind === "test" ? "No drills today. Eat breakfast, breathe, and trust your prep." : "Hope it went great. You earned a break."}</p>
       </section>
@@ -49,13 +52,13 @@ async function Drill() {
     <>
       {kind === "practice" && (
         <p className="mb-4 rounded-xl bg-accent-soft p-3 text-sm">
-          📝 <strong>Saturday is practice test day.</strong> Take a full Bluebook test, then{" "}
+          <Ico icon={ClipboardList} className="mr-1 text-accent" /> <strong>Saturday is practice test day.</strong> Take a full Bluebook test, then{" "}
           <Link href="/tests/new" className="font-medium text-accent underline">log your results</Link>. The drill below is optional today.
         </p>
       )}
       {sectionFocus !== "both" && (
         <p className="mb-3 text-xs text-muted">
-          🎯 Focus: <strong className="text-ink">{FOCUS_LABEL[sectionFocus]}</strong> only.{" "}
+          <Ico icon={Target} className="mr-1" /> Focus: <strong className="text-ink">{FOCUS_LABEL[sectionFocus]}</strong> only.{" "}
           <Link href="/more#focus" className="underline">
             Change
           </Link>

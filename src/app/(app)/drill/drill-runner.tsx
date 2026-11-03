@@ -6,7 +6,11 @@ import type { ErrorItem } from "@/lib/errors";
 import { ReviewSession } from "../errors/review/review-session";
 import { QuestionPlayer } from "./question-player";
 import { XpBar } from "@/components/xp-bar";
-import { drillXp } from "@/lib/xp";
+import { drillXp, levelFor } from "@/lib/xp";
+import { celebrate } from "@/lib/celebrate";
+import { Ico } from "@/components/ico";
+import { IconTile } from "@/components/icon-tile";
+import { BookCheck, Flame, Trophy } from "lucide-react";
 
 type Props = {
   due: ErrorItem[];
@@ -50,6 +54,11 @@ export function DrillRunner({
   }, []);
   const toDone = useCallback(() => setPhase("done"), []);
 
+  // Confetti when she finishes the drill in this sitting (not when revisiting a finished day).
+  useEffect(() => {
+    if (phase === "done" && !completed) celebrate();
+  }, [phase, completed]);
+
   const total = due.length + planned;
   const done = (phase === "reviews" ? 0 : due.length) + answered;
 
@@ -59,7 +68,8 @@ export function DrillRunner({
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Today&apos;s drill</h1>
           <span className="rounded-full bg-accent-soft px-3 py-1 text-sm font-semibold text-accent">
-            🔥 {streak + (phase === "done" && !completed ? 1 : 0)}-day streak
+            <Ico icon={Flame} className="mr-1 fill-orange-400 text-orange-500" />
+            {streak + (phase === "done" && !completed ? 1 : 0)}-day streak
           </span>
         </div>
         {phase !== "done" && (
@@ -87,7 +97,7 @@ export function DrillRunner({
       )}
       {phase === "done" && (
         <section className="card p-6 text-center">
-          <p className="text-5xl">🔥</p>
+          <IconTile icon={Flame} tone="fire" size="lg" />
           <h2 className="mt-3 text-xl font-bold">{planned === 0 ? "Light review done!" : "Drill done for today!"}</h2>
           {answered > 0 && <Score right={score} total={answered} />}
           <EarnedXp
@@ -101,9 +111,7 @@ export function DrillRunner({
           )}
           {answered > score && (
             <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm">
-              <span aria-hidden className="mr-1.5">
-                📕
-              </span>
+              <Ico icon={BookCheck} className="mr-1.5 text-accent" />
               The {answered - score} you missed {answered - score === 1 ? "is" : "are"} saved in your error log and come back
               tomorrow.{" "}
               <Link href="/errors" className="font-medium text-accent underline">
@@ -125,11 +133,29 @@ export function DrillRunner({
   );
 }
 
+// The bar starts at her XP from before this sitting and fills up to the new total.
 function EarnedXp({ xp, earned }: { xp: number; earned: number }) {
+  const [shown, setShown] = useState(xp);
+  useEffect(() => {
+    if (earned <= 0) return;
+    const t = setTimeout(() => setShown(xp + earned), 450);
+    return () => clearTimeout(t);
+  }, [xp, earned]);
+  const newLevel = levelFor(xp + earned).level;
+  const leveledUp = newLevel > levelFor(xp).level && shown === xp + earned;
+  useEffect(() => {
+    if (leveledUp) celebrate(true);
+  }, [leveledUp]);
+
   return (
     <div className="mx-auto mt-4 max-w-64 rounded-xl bg-bg p-3 text-left">
-      {earned > 0 && <p className="mb-2 text-center text-lg font-bold text-accent">+{earned} XP</p>}
-      <XpBar xp={xp + earned} compact />
+      {earned > 0 && <p className="mb-2 animate-rise text-center text-lg font-bold text-accent">+{earned} XP</p>}
+      {leveledUp && (
+        <p className="mb-2 flex animate-pop items-center justify-center gap-1.5 rounded-lg bg-amber-400/20 py-1.5 text-sm font-bold text-amber-600 dark:text-amber-300">
+          <Trophy aria-hidden className="size-4" /> Level up! You&apos;re level {newLevel}
+        </p>
+      )}
+      <XpBar xp={shown} compact />
     </div>
   );
 }
@@ -164,5 +190,5 @@ function Elapsed({ since }: { since: string }) {
   }, []);
   if (now === null) return null;
   const minutes = Math.max(0, Math.floor((now - Date.parse(since)) / 60_000));
-  return <span className="shrink-0 text-sm tabular-nums text-muted">{minutes < 90 ? `${minutes} / 30 min` : "⏱"}</span>;
+  return <span className="shrink-0 text-sm tabular-nums text-muted">{minutes < 90 ? `${minutes} / 30 min` : ""}</span>;
 }

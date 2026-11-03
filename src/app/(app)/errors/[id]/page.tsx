@@ -11,6 +11,8 @@ import { SECTION_LABEL } from "@/lib/skills";
 import { ConfirmButton } from "@/components/confirm-button";
 import { TutorPanel } from "@/components/tutor-panel";
 import { deleteError } from "../actions";
+import { Ico } from "@/components/ico";
+import { Lightbulb } from "lucide-react";
 
 export default function ErrorDetailPage({ params }: PageProps<"/errors/[id]">) {
   return (
@@ -51,7 +53,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
           </p>
           <h1 className="mt-1 text-lg font-bold leading-snug">{item.skills.name}</h1>
         </div>
-        {item.question_text && <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.question_text}</p>}
+        {item.question_text && <p className="whitespace-pre-wrap font-serif text-[17px] leading-[1.7]">{item.question_text}</p>}
         {item.screenshot_path && urls[item.screenshot_path] && (
           <a href={urls[item.screenshot_path]} target="_blank" rel="noreferrer">
             {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
@@ -64,7 +66,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
         </div>
         <TagReason id={item.id} reason={item.reason} />
         <p className="text-xs text-muted">Logged {formatDay(item.created_at.slice(0, 10))}</p>
-        {item.notes && <p className="rounded-xl bg-accent-soft p-3 text-sm">💡 {item.notes}</p>}
+        {item.notes && <p className="flex gap-2 rounded-xl bg-accent-soft p-3 text-sm"><Ico icon={Lightbulb} className="mt-0.5 text-accent" /> {item.notes}</p>}
         <TutorPanel kind="error" id={item.id} />
       </section>
 

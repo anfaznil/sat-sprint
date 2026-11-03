@@ -1,3 +1,4 @@
+import { ClipboardList, Leaf, Target, Zap, type LucideIcon } from "lucide-react";
 import { addDays, daysBetween, TEST_DATE } from "@/lib/dates";
 
 export type DayKind = "drill" | "practice" | "light" | "test";
@@ -37,9 +38,9 @@ export function buildPlan(today: string): { weekOf: string; days: PlanDay[] }[] 
   return weeks;
 }
 
-export const DAY_LABEL: Record<DayKind, { title: string; detail: string; icon: string }> = {
-  drill: { title: "Daily drill", detail: "Reviews + new questions, ~30 min", icon: "⚡" },
-  practice: { title: "Full practice test", detail: "Bluebook, timed, in one sitting, then log results", icon: "📝" },
-  light: { title: "Light review only", detail: "Error-log reviews and grammar cards. No new material.", icon: "🌿" },
-  test: { title: "SAT day!", detail: "You've got this.", icon: "🎯" },
+export const DAY_LABEL: Record<DayKind, { title: string; detail: string; icon: LucideIcon }> = {
+  drill: { title: "Daily drill", detail: "Reviews + new questions, ~30 min", icon: Zap },
+  practice: { title: "Full practice test", detail: "Bluebook, timed, in one sitting, then log results", icon: ClipboardList },
+  light: { title: "Light review only", detail: "Error-log reviews and grammar cards. No new material.", icon: Leaf },
+  test: { title: "SAT day!", detail: "You've got this.", icon: Target },
 };
