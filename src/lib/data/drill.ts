@@ -45,8 +45,20 @@ export async function getTodayProgress(userId: string) {
     .eq("drill_date", today())
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { started: false, answered: 0, planned: null, completed: false };
-  return { started: true, answered: await countAnswered(data.id), planned: data.planned_new, completed: Boolean(data.completed_at) };
+  if (!data) return { started: false, answered: 0, score: 0, planned: null, completed: false };
+  const [answered, score] = await Promise.all([countAnswered(data.id), countCorrect(data.id)]);
+  return { started: true, answered, score, planned: data.planned_new, completed: Boolean(data.completed_at) };
+}
+
+export async function countCorrect(sessionId: string) {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("question_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", sessionId)
+    .eq("correct", true);
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function countAnswered(sessionId: string) {

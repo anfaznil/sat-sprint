@@ -5,11 +5,16 @@ import { useCallback, useEffect, useState } from "react";
 import type { ErrorItem } from "@/lib/errors";
 import { ReviewSession } from "../errors/review/review-session";
 import { QuestionPlayer } from "./question-player";
+import { XpBar } from "@/components/xp-bar";
+import { drillXp } from "@/lib/xp";
 
 type Props = {
   due: ErrorItem[];
   screenshotUrls: Record<string, string>;
   answered: number;
+  score: number;
+  // Total XP when the page loaded; this sitting's XP is added on the done screen.
+  xp: number;
   planned: number;
   completed: boolean;
   startedAt: string;
@@ -17,12 +22,32 @@ type Props = {
   focus: string[];
 };
 
-export function DrillRunner({ due, screenshotUrls, answered: initialAnswered, planned, completed, startedAt, streak, focus }: Props) {
+export function DrillRunner({
+  due,
+  screenshotUrls,
+  answered: initialAnswered,
+  score: initialScore,
+  xp,
+  planned,
+  completed,
+  startedAt,
+  streak,
+  focus,
+}: Props) {
   const [phase, setPhase] = useState<"reviews" | "questions" | "done">(
     completed ? "done" : due.length > 0 && initialAnswered === 0 ? "reviews" : "questions",
   );
   const [answered, setAnswered] = useState(initialAnswered);
-  const toQuestions = useCallback(() => setPhase("questions"), []);
+  const [score, setScore] = useState(initialScore);
+  const [reviewTally, setReviewTally] = useState<{ right: number; total: number } | null>(null);
+  const toQuestions = useCallback((tally: { right: number; total: number }) => {
+    setReviewTally(tally);
+    setPhase("questions");
+  }, []);
+  const onProgress = useCallback((a: number, s: number) => {
+    setAnswered(a);
+    setScore(s);
+  }, []);
   const toDone = useCallback(() => setPhase("done"), []);
 
   const total = due.length + planned;
@@ -50,7 +75,7 @@ export function DrillRunner({ due, screenshotUrls, answered: initialAnswered, pl
                 ? `Step 1: ${due.length} review${due.length === 1 ? "" : "s"} from your error log`
                 : planned === 0
                   ? "Light review day: no new questions. Rest up for Saturday."
-                  : `Step 2: question ${Math.min(answered + 1, planned)} of ${planned} · ${focus.join(" · ")}`}
+                  : `Step 2: question ${Math.min(answered + 1, planned)} of ${planned}${answered > 0 ? ` · ✓ ${score} right` : ""} · ${focus.join(" · ")}`}
             </p>
           </>
         )}
@@ -58,22 +83,69 @@ export function DrillRunner({ due, screenshotUrls, answered: initialAnswered, pl
 
       {phase === "reviews" && <ReviewSession items={due} screenshotUrls={screenshotUrls} onFinish={toQuestions} />}
       {phase === "questions" && (
-        <QuestionPlayer startSlot={answered} planned={planned} onProgress={setAnswered} onDone={toDone} />
+        <QuestionPlayer startSlot={answered} planned={planned} onProgress={onProgress} onDone={toDone} />
       )}
       {phase === "done" && (
         <section className="card p-6 text-center">
           <p className="text-5xl">🔥</p>
           <h2 className="mt-3 text-xl font-bold">{planned === 0 ? "Light review done!" : "Drill done for today!"}</h2>
-          <p className="mt-1 text-muted">
+          {answered > 0 && <Score right={score} total={answered} />}
+          <EarnedXp
+            xp={xp}
+            earned={drillXp(score - initialScore, answered - initialAnswered, reviewTally, !completed)}
+          />
+          {reviewTally && reviewTally.total > 0 && (
+            <p className="mt-2 text-sm text-muted">
+              Reviews: {reviewTally.right} of {reviewTally.total} right
+            </p>
+          )}
+          {answered > score && (
+            <p className="mt-3 rounded-xl bg-accent-soft p-3 text-sm">
+              <span aria-hidden className="mr-1.5">
+                📕
+              </span>
+              The {answered - score} you missed {answered - score === 1 ? "is" : "are"} saved in your error log and come back
+              tomorrow.{" "}
+              <Link href="/errors" className="font-medium text-accent underline">
+                See them
+              </Link>
+            </p>
+          )}
+          <p className="mt-3 text-muted">
             {planned === 0
               ? "That's all for today. Flip through a few grammar cards if you want, then relax."
-              : `${planned} new questions${due.length > 0 ? ` and ${due.length} reviews` : ""}. Come back tomorrow to keep the streak going.`}
+              : "Come back tomorrow to keep the streak going."}
           </p>
           <Link href="/" className="btn-primary mt-5">
             Back home
           </Link>
         </section>
       )}
+    </div>
+  );
+}
+
+function EarnedXp({ xp, earned }: { xp: number; earned: number }) {
+  return (
+    <div className="mx-auto mt-4 max-w-64 rounded-xl bg-bg p-3 text-left">
+      {earned > 0 && <p className="mb-2 text-center text-lg font-bold text-accent">+{earned} XP</p>}
+      <XpBar xp={xp + earned} compact />
+    </div>
+  );
+}
+
+function Score({ right, total }: { right: number; total: number }) {
+  const pct = Math.round((right / total) * 100);
+  return (
+    <div className="mx-auto mt-4 max-w-56">
+      <p className="text-4xl font-bold tabular-nums">
+        {right}
+        <span className="text-2xl text-muted"> / {total}</span>
+      </p>
+      <p className="text-sm text-muted">new questions right · {pct}%</p>
+      <div className="mt-2 h-2.5 overflow-hidden rounded bg-line/70" role="presentation">
+        <div className="h-full rounded bg-good" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }

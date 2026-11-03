@@ -6,7 +6,7 @@ import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { today } from "@/lib/dates";
 import { applyReview, firstReview, type Stage } from "@/lib/spaced";
-import { DIFFICULTIES, REASONS, SCREENSHOT_PATH } from "@/lib/errors";
+import { DIFFICULTIES, REASONS, SCREENSHOT_PATH, type Reason } from "@/lib/errors";
 
 export type LogErrorState = {
   error?: string;
@@ -103,15 +103,30 @@ export async function recordReview(id: string, correct: boolean) {
   return { stage: outcome.stage, cleared: outcome.cleared, nextReviewOn: outcome.nextReviewOn };
 }
 
+// Tags (or re-tags) why she missed an error-log item.
+export async function tagError(id: string, reason: Reason) {
+  await requireMember();
+  if (!(reason in REASONS)) throw new Error("Unknown reason");
+  const supabase = await createClient();
+  const { error } = await supabase.from("error_log").update({ reason }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/", "layout");
+}
+
 // Screenshots upload straight from the phone to Storage (server actions cap bodies at 1 MB),
 // through a one-time signed upload URL that only the unlocked app can get.
-export async function prepareScreenshotUpload(ext: string) {
+export async function prepareScreenshotUpload(
+  ext: string,
+): Promise<{ path: string; token: string; error?: undefined } | { error: string }> {
   await requireMember();
-  if (!["jpg", "png", "webp", "heic"].includes(ext)) throw new Error("Unsupported image type");
+  if (!["jpg", "png", "webp", "heic"].includes(ext)) return { error: "Use a PNG, JPEG, WebP or HEIC image." };
   const supabase = await createClient();
   const path = `errors/${crypto.randomUUID()}.${ext}`;
   const { data, error } = await supabase.storage.from("screenshots").createSignedUploadUrl(path);
-  if (error) throw error;
+  if (error) {
+    console.error("createSignedUploadUrl failed", error);
+    return { error: "Couldn't start the upload. Check that the screenshots bucket exists (migration 0001)." };
+  }
   return { path: data.path, token: data.token };
 }
 

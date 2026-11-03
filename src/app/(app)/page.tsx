@@ -6,6 +6,8 @@ import { countDueErrors } from "@/lib/data/errors";
 import { getStreak, getTodayProgress } from "@/lib/data/drill";
 import { accuracyTone, FOCUS_LABEL, inFocus, rankSkills, SECTION_LABEL, type SkillStat } from "@/lib/skills";
 import { getFocus } from "@/lib/data/settings";
+import { getXp } from "@/lib/data/xp";
+import { XpBar } from "@/components/xp-bar";
 import { daysBetween, REGISTRATION_DEADLINE, TEST_DATE, today } from "@/lib/dates";
 import { DAY_LABEL, dayKind } from "@/lib/plan";
 
@@ -20,12 +22,13 @@ export default function HomePage() {
 async function Dashboard() {
   const member = await requireMember();
   const focus = await getFocus();
-  const [{ domains, skills }, results, dueReviews, progress, streak] = await Promise.all([
+  const [{ domains, skills }, results, dueReviews, progress, streak, xp] = await Promise.all([
     getSkillMap(),
     getSkillResults(),
     countDueErrors(focus),
     getTodayProgress(member.id),
     getStreak(member.id),
+    getXp(),
   ]);
   // Home follows the section focus; the other section's skills are hidden, not lost.
   const all = rankSkills(domains, skills, results);
@@ -71,6 +74,8 @@ async function Dashboard() {
           <span className="text-accent">Change</span>
         </Link>
       )}
+
+      <XpBar xp={xp} />
 
       <DrillCard due={dueReviews} progress={progress} streak={streak} />
 
@@ -123,9 +128,9 @@ function DrillCard({
   streak: number;
 }) {
   const status = progress.completed
-    ? "Done for today ✓"
+    ? `Done for today ✓${progress.answered > 0 ? ` · ${progress.score}/${progress.answered} right` : ""}`
     : progress.started && progress.answered > 0
-      ? `${progress.answered} of ${progress.planned} questions done`
+      ? `${progress.answered} of ${progress.planned} questions done · ${progress.score} right`
       : due > 0
         ? `${due} review${due === 1 ? "" : "s"} + new questions · ~30 min`
         : "New questions on your focus skills · ~30 min";

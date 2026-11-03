@@ -4,6 +4,7 @@ import { applyReview, firstReview } from "./spaced";
 import { computeStreak } from "./drill/streak";
 import { pickDifficulty, pickFocusSkills, plannedNewQuestions } from "./drill/plan";
 import type { Domain, Skill, SkillStat } from "./skills";
+import { drillXp, levelFor, totalXp } from "./xp";
 import { isCorrect, validateQuestion } from "./drill/validate";
 import { buildPlan, dayKind } from "./plan";
 import { createSession, passcodeMatches, verifySession } from "./session";
@@ -48,6 +49,16 @@ const untestedFixture = [{ skill: sk("r3", rw), domain: rw }, { skill: sk("m3", 
 eq(pickFocusSkills(rankedFixture, untestedFixture, "both").map((f) => f.skill.id), ["m1", "r1", "m2"], "focus both");
 eq(pickFocusSkills(rankedFixture, untestedFixture, "rw").map((f) => f.skill.id), ["r1", "r2", "r3"], "focus rw fills with untested rw");
 eq(pickFocusSkills([], untestedFixture, "math").map((f) => f.skill.id), ["m3"], "focus math, little data");
+
+// XP and levels
+eq(levelFor(0), { level: 1, into: 0, span: 100 }, "level 1 start");
+eq(levelFor(99), { level: 1, into: 99, span: 100 }, "just under level 2");
+eq(levelFor(100), { level: 2, into: 0, span: 150 }, "level 2");
+eq(levelFor(260), { level: 3, into: 10, span: 200 }, "level 3");
+eq(drillXp(9, 12, { right: 3, total: 4 }, true), 9 * 10 + 3 * 3 + 3 * 8 + 1 * 3 + 25, "drill sitting xp");
+eq(drillXp(0, 0, null, false), 0, "no activity");
+eq(totalXp({ drillRight: 1, drillWrong: 1, reviewRight: 1, reviewWrong: 1, drillsCompleted: 1, missesLogged: 1, practiceTests: 1, cardsStarted: 1, cardsMastered: 1 }),
+  10 + 3 + 8 + 3 + 25 + 5 + 50 + 2 + 10, "total xp");
 
 async function sessionChecks() {
   process.env.SESSION_SECRET = "test-secret-test-secret-test-secret-1234";

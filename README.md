@@ -30,6 +30,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    5. `supabase/migrations/0005_seed_flashcards.sql`: grammar flashcards
    6. `supabase/migrations/0006_passcode_mode.sql`: passcode access (no Supabase accounts)
    7. `supabase/migrations/0007_section_focus.sql`: the "test focus" setting
+   8. `supabase/migrations/0008_untagged_misses.sql`: lets drill misses save before they're tagged
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -108,8 +109,9 @@ Phone screenshots are shrunk in the browser (max 1600px JPEG) and uploaded strai
 3. **Difficulty adapts.** It starts from her test accuracy on the skill (under 50%: easy, under 75%: medium, otherwise hard). Then her last few drill answers on that skill move it up or down a level.
 4. **Questions are reused.** Stored questions she hasn't answered are served first. When a skill and difficulty runs out, Claude writes 3 more in one call. Each one is checked (4 distinct choices, a valid answer key, a passage for R&W, no LaTeX, sane lengths) and saved to `questions`. Invalid ones are discarded.
 5. **Answers are graded on the server.** The browser never gets the answer key before she answers. Typed math answers accept equivalent forms (7/2 = 3.5).
-6. **Misses go to the error log.** A wrong answer offers one-tap "why did you miss it?" buttons that add it to the error log.
-7. **Streak.** Consecutive days with a finished drill.
+6. **Misses go to the error log automatically.** Every wrong answer is saved right away (`reason` is null, shown as "Not tagged yet"). One-tap "why did you miss it?" buttons tag it, then or later from the item's page.
+7. **Score.** A running "✓ N right" shows during the drill, and the done screen shows the final score, the review score, and how many misses were saved. Home shows today's score.
+8. **Streak.** Consecutive days with a finished drill.
 
 The next question is fetched through a route handler (`/api/drill/next`) rather than a server action, so it can be written in the background while she works on the current one. Server actions run one at a time and would block her answer.
 
@@ -134,6 +136,20 @@ Each assistant reply's raw content blocks are stored in `tutor_messages.blocks` 
 
 Past days show ✓ when done. The Nov 20 registration reminder shows on Home and on the plan until the deadline. A logged Saturday practice test counts toward the streak, just like a finished drill.
 
+### XP and levels
+XP is computed from data the app already stores (`src/lib/xp.ts`, `src/lib/data/xp.ts`), so there's nothing extra to save or keep in sync:
+
+| Action | XP |
+|---|---|
+| Right drill answer / wrong drill answer | +10 / +3 |
+| Right review / wrong review | +8 / +3 |
+| Finished daily drill | +25 |
+| Miss logged by hand | +5 |
+| Practice test logged | +50 |
+| Grammar card started / mastered | +2 / +10 |
+
+Level 1 → 2 takes 100 XP, and each level after takes 50 more than the last. The bar is on Home, and the drill's done screen shows "+XP" for that sitting.
+
 ### Test focus (superscoring)
 **More → Test focus** picks **Both sections**, **Reading & Writing**, or **Math** for the current test date. It's stored in `app_settings.focus_section`. With one section chosen:
 - **Drill:** the drill's 3 weakest skills and its due reviews come only from that section.
@@ -155,8 +171,8 @@ If migration 0007 hasn't been run, the app treats the focus as "both" and the pi
 supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
-  migrations/0003–0007            drill size, tutor storage + light days, flashcards,
-                                  passcode mode, test focus
+  migrations/0003–0008            drill size, tutor storage + light days, flashcards,
+                                  passcode mode, test focus, untagged misses
 src/
   proxy.ts                        passcode check on every request
   lib/
@@ -177,6 +193,7 @@ src/
     data/errors.ts                error log queries, signed screenshot URLs
     data/drill.ts                 today's session, focus skills, streak
     data/settings.ts              test focus (both / R&W / Math)
+    data/xp.ts  xp.ts             XP totals and levels
   components/                     bottom-nav, tutor-panel, bar-list (charts), flash, confirm-button
   app/
     login/                        passcode form

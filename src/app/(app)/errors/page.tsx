@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireMember } from "@/lib/auth";
 import { getErrors } from "@/lib/data/errors";
-import { REASONS, type ErrorItem, type Reason } from "@/lib/errors";
+import { REASONS, reasonInfo, UNTAGGED, type ErrorItem, type Reason } from "@/lib/errors";
 import { formatDay, today } from "@/lib/dates";
 import { SECTION_LABEL } from "@/lib/skills";
 import { BarList } from "@/components/bar-list";
@@ -52,11 +52,13 @@ async function ErrorLog() {
   const due = active.filter((i) => i.next_review_on <= now);
   const nextUp = active.find((i) => i.next_review_on > now);
 
-  const byReason = (Object.keys(REASONS) as Reason[]).map((r) => ({
+  const byReason: { label: string; icon: string; value: number }[] = (Object.keys(REASONS) as Reason[]).map((r) => ({
     label: REASONS[r].label,
     icon: REASONS[r].icon,
     value: items.filter((i) => i.reason === r).length,
   }));
+  const untagged = items.filter((i) => !i.reason).length;
+  if (untagged > 0) byReason.push({ label: UNTAGGED.label, icon: UNTAGGED.icon, value: untagged });
   const skillCounts = new Map<string, number>();
   for (const i of items) skillCounts.set(i.skills.name, (skillCounts.get(i.skills.name) ?? 0) + 1);
   const bySkill = [...skillCounts]
@@ -132,7 +134,8 @@ async function ErrorLog() {
   );
 }
 
-function reasonInsight(rows: { label: string; value: number }[]) {
+function reasonInsight(all: { label: string; value: number }[]) {
+  const rows = all.filter((r) => r.label !== UNTAGGED.label);
   const top = [...rows].sort((a, b) => b.value - a.value)[0];
   const total = rows.reduce((s, r) => s + r.value, 0);
   if (!top || total < 5) return "Patterns show up after a few more misses.";
@@ -166,7 +169,7 @@ function ErrorRow({ item, now }: { item: ErrorItem; now: string }) {
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-muted">{item.question_text || "📷 Screenshot"}</p>
         <p className="mt-2 text-xs text-muted">
-          {REASONS[item.reason].icon} {REASONS[item.reason].label} · {item.difficulty} · {SECTION_LABEL[item.section]}
+          {reasonInfo(item.reason).icon} {reasonInfo(item.reason).label} · {item.difficulty} · {SECTION_LABEL[item.section]}
           {!item.cleared_at && ` · step ${item.stage} of 3`}
         </p>
       </Link>

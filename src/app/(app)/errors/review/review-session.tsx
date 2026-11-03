@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { REASONS, type ErrorItem } from "@/lib/errors";
+import { reasonInfo, type ErrorItem } from "@/lib/errors";
 import { formatDay } from "@/lib/dates";
 import { recordReview } from "../actions";
 import { TutorPanel } from "@/components/tutor-panel";
@@ -17,7 +17,7 @@ export function ReviewSession({
   items: ErrorItem[];
   screenshotUrls: Record<string, string>;
   // Inside the daily drill: show a "continue" button instead of "back home".
-  onFinish?: () => void;
+  onFinish?: (tally: { right: number; total: number }) => void;
 }) {
   // Snapshot the queue: the server refreshes after each answer, but the session shouldn't shift.
   const [items] = useState(initial);
@@ -51,7 +51,7 @@ export function ReviewSession({
           {tally.right === items.length ? "Perfect round. Those points are yours." : "The misses come back tomorrow, and that repetition is how they stick."}
         </p>
         {onFinish ? (
-          <button className="btn-primary mt-5" onClick={onFinish}>
+          <button className="btn-primary mt-5" onClick={() => onFinish({ right: tally.right, total: items.length })}>
             On to new questions →
           </button>
         ) : (
@@ -131,7 +131,7 @@ export function ReviewSession({
             </div>
           </div>
           <p className="text-sm text-muted">
-            Missed because: {REASONS[item.reason].icon} {REASONS[item.reason].label}
+            Missed because: {reasonInfo(item.reason).icon} {reasonInfo(item.reason).label}
           </p>
           {item.notes && <p className="rounded-xl bg-accent-soft p-3 text-sm">💡 {item.notes}</p>}
           <TutorPanel key={item.id} kind="error" id={item.id} />

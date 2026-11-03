@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { requireMember } from "@/lib/auth";
 import { getDueErrors, signScreenshots } from "@/lib/data/errors";
-import { countAnswered, getFocusSkills, getStreak, getTodaySession } from "@/lib/data/drill";
+import { countAnswered, countCorrect, getFocusSkills, getStreak, getTodaySession } from "@/lib/data/drill";
 import { DrillRunner } from "./drill-runner";
 import { getFocus } from "@/lib/data/settings";
+import { getXp } from "@/lib/data/xp";
 import { FOCUS_LABEL } from "@/lib/skills";
 import { TEST_DATE, today } from "@/lib/dates";
 import { dayKind } from "@/lib/plan";
@@ -37,7 +38,12 @@ async function Drill() {
     getDueErrors(sectionFocus),
     getStreak(member.id),
   ]);
-  const [answered, urls] = await Promise.all([countAnswered(session.id), signScreenshots(due.map((d) => d.screenshot_path))]);
+  const [answered, score, urls, xp] = await Promise.all([
+    countAnswered(session.id),
+    countCorrect(session.id),
+    signScreenshots(due.map((d) => d.screenshot_path)),
+    getXp(),
+  ]);
 
   return (
     <>
@@ -59,6 +65,8 @@ async function Drill() {
         due={due}
         screenshotUrls={urls}
         answered={answered}
+        score={score}
+        xp={xp}
         planned={session.planned_new}
         completed={Boolean(session.completed_at)}
         startedAt={session.started_at}

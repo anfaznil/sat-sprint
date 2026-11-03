@@ -6,6 +6,12 @@ export const REASONS = {
 } as const;
 export type Reason = keyof typeof REASONS;
 
+// Drill misses are saved before she tags them, so a reason can be missing.
+export const UNTAGGED = { label: "Not tagged yet", hint: "Tag it to spot patterns", icon: "🏷️" };
+export function reasonInfo(reason: Reason | null) {
+  return reason ? REASONS[reason] : UNTAGGED;
+}
+
 export const DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
@@ -17,7 +23,7 @@ export type ErrorItem = {
   question_text: string;
   her_answer: string;
   correct_answer: string;
-  reason: Reason;
+  reason: Reason | null;
   notes: string | null;
   screenshot_path: string | null;
   stage: 1 | 2 | 3;

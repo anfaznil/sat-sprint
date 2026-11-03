@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { REASONS, type Reason } from "@/lib/errors";
 import type { NextResult, PlayerQuestion } from "@/lib/drill/next";
-import { answerQuestion, logDrillMiss, type AnswerResult } from "./actions";
+import { answerQuestion, tagDrillMiss, type AnswerResult } from "./actions";
 import { TutorPanel } from "@/components/tutor-panel";
 
 const LETTERS = ["A", "B", "C", "D"];
@@ -29,7 +29,7 @@ export function QuestionPlayer({
 }: {
   startSlot: number;
   planned: number;
-  onProgress: (answered: number) => void;
+  onProgress: (answered: number, score: number) => void;
   onDone: () => void;
 }) {
   const [slot, setSlot] = useState(startSlot);
@@ -37,7 +37,7 @@ export function QuestionPlayer({
   const [error, setError] = useState<string | null>(null);
   const [chosen, setChosen] = useState("");
   const [result, setResult] = useState<AnswerResult | null>(null);
-  const [missLogged, setMissLogged] = useState<Reason | null>(null);
+  const [missTag, setMissTag] = useState<Reason | null>(null);
   const [pending, startTransition] = useTransition();
   const shownAt = useRef(0);
   const prefetch = useRef<{ slot: number; promise: Promise<NextResult> } | null>(null);
@@ -81,22 +81,23 @@ export function QuestionPlayer({
       try {
         const r = await answerQuestion(question.id, answer, (Date.now() - shownAt.current) / 1000);
         setResult(r);
-        onProgress(r.answered);
+        onProgress(r.answered, r.score);
       } catch {
         setError("Couldn't save your answer. Check your connection and tap again.");
       }
     });
   }
 
-  function logMiss(reason: Reason) {
+  function tagMiss(reason: Reason) {
     if (!question) return;
-    setMissLogged(reason);
+    const previous = missTag;
+    setMissTag(reason);
     startTransition(async () => {
       try {
-        await logDrillMiss(question.id, chosen, reason);
+        await tagDrillMiss(question.id, chosen, reason);
       } catch {
-        setMissLogged(null);
-        setError("Couldn't add it to the error log. Try again.");
+        setMissTag(previous);
+        setError("Couldn't save that. Try again.");
       }
     });
   }
@@ -105,7 +106,7 @@ export function QuestionPlayer({
     if (result?.completed && slot + 1 >= planned) return onDone();
     setResult(null);
     setChosen("");
-    setMissLogged(null);
+    setMissTag(null);
     setQuestion(null);
     setError(null);
     setSlot((s) => s + 1);
@@ -214,21 +215,27 @@ export function QuestionPlayer({
           <TutorPanel key={question.id} kind="question" id={question.id} label={result.correct ? "🤔 Explain it more" : undefined} />
 
           {!result.correct && (
-            <div className="border-t border-line pt-3">
-              {missLogged ? (
-                <p className="text-sm text-good">✓ Added to your error log. It comes back tomorrow.</p>
+            <div className="space-y-2 border-t border-line pt-3">
+              {result.savedToLog || missTag ? (
+                <p className="text-sm text-good">📕 Saved to your error log. It comes back tomorrow.</p>
               ) : (
-                <>
-                  <p className="mb-2 text-sm font-medium">Why did you miss it? (adds it to your error log)</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(Object.keys(REASONS) as Reason[]).map((r) => (
-                      <button key={r} className="rounded-xl border border-line p-2.5 text-left text-sm" onClick={() => logMiss(r)}>
-                        {REASONS[r].icon} {REASONS[r].label}
-                      </button>
-                    ))}
-                  </div>
-                </>
+                <p className="text-sm text-muted">Tag why you missed it to save it to your error log.</p>
               )}
+              <p className="text-sm font-medium">
+                Why did you miss it? {result.savedToLog && <span className="font-normal text-muted">(optional)</span>}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(REASONS) as Reason[]).map((r) => (
+                  <button
+                    key={r}
+                    aria-pressed={missTag === r}
+                    className={`rounded-xl border p-2.5 text-left text-sm ${missTag === r ? "border-accent bg-accent-soft" : "border-line"}`}
+                    onClick={() => tagMiss(r)}
+                  >
+                    {REASONS[r].icon} {REASONS[r].label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <button className="btn-primary w-full" onClick={next} disabled={pending}>

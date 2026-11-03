@@ -5,17 +5,21 @@ import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { today } from "@/lib/dates";
 import { firstReview } from "@/lib/spaced";
-import { REASONS } from "@/lib/errors";
+import { REASONS, type Reason } from "@/lib/errors";
 import { isCorrect } from "@/lib/drill/validate";
-import { countAnswered, getTodaySession } from "@/lib/data/drill";
+import { countAnswered, countCorrect, getTodaySession } from "@/lib/data/drill";
 
 export type AnswerResult = {
   correct: boolean;
   answer: string;
   explanation: string;
   answered: number;
+  // Right answers so far in today's drill.
+  score: number;
   planned: number;
   completed: boolean;
+  // Set when a wrong answer was saved to the error log.
+  savedToLog: boolean;
 };
 
 export async function answerQuestion(questionId: string, chosen: string, seconds: number): Promise<AnswerResult> {
@@ -49,57 +53,72 @@ export async function answerQuestion(questionId: string, chosen: string, seconds
     if (insertError) throw insertError;
   }
 
-  const answered = await countAnswered(session.id);
+  // Every miss goes to the error log right away, so none are lost if she skips tagging it.
+  const savedToLog = !correct && (await saveMiss(questionId, chosen, null));
+
+  const [answered, score] = await Promise.all([countAnswered(session.id), countCorrect(session.id)]);
   let completed = Boolean(session.completed_at);
   if (!completed && answered >= session.planned_new) {
     await supabase.from("drill_sessions").update({ completed_at: new Date().toISOString() }).eq("id", session.id);
     completed = true;
     revalidatePath("/", "layout");
   }
-  return { correct, answer: q.answer, explanation: q.explanation, answered, planned: session.planned_new, completed };
+  return { correct, answer: q.answer, explanation: q.explanation, answered, score, planned: session.planned_new, completed, savedToLog };
 }
 
-// A wrong drill answer goes into the error log so it comes back for spaced review.
-export async function logDrillMiss(questionId: string, chosen: string, reason: keyof typeof REASONS) {
+// Tags why she missed a drill question (saving it first if the automatic save didn't happen).
+export async function tagDrillMiss(questionId: string, chosen: string, reason: Reason) {
   await requireMember();
   if (!(reason in REASONS)) throw new Error("Unknown reason");
   const supabase = await createClient();
+  const { data: updated } = await supabase
+    .from("error_log")
+    .update({ reason })
+    .eq("question_id", questionId)
+    .is("cleared_at", null)
+    .select("id");
+  if (!updated?.length && !(await saveMiss(questionId, chosen, reason))) throw new Error("Couldn't save the miss");
+  revalidatePath("/", "layout");
+}
 
+// Adds a drill question she got wrong to the error log, once. Returns whether it's in the log.
+async function saveMiss(questionId: string, chosen: string, reason: Reason | null): Promise<boolean> {
+  const supabase = await createClient();
   const { data: existing } = await supabase
     .from("error_log")
     .select("id")
     .eq("question_id", questionId)
     .is("cleared_at", null)
     .maybeSingle();
-  if (existing) return { id: existing.id };
+  if (existing) return true;
 
   const { data: q, error } = await supabase
     .from("questions")
     .select("skill_id, difficulty, passage, stem, choices, answer, skills(domains(section))")
     .eq("id", questionId)
     .single();
-  if (error) throw error;
+  if (error) return false;
 
   const section = (q.skills as unknown as { domains: { section: "math" | "rw" } }).domains.section;
   const choices = (q.choices as string[] | null)?.map((c, i) => `${"ABCD"[i]}) ${c}`).join("\n");
   const text = [q.passage, q.stem, choices].filter(Boolean).join("\n\n");
 
-  const { data: row, error: insertError } = await supabase
-    .from("error_log")
-    .insert({
-      section,
-      skill_id: q.skill_id,
-      difficulty: q.difficulty,
-      question_text: text,
-      her_answer: chosen,
-      correct_answer: q.answer,
-      reason,
-      question_id: questionId,
-      next_review_on: firstReview(today()),
-    })
-    .select("id")
-    .single();
-  if (insertError) throw insertError;
+  const { error: insertError } = await supabase.from("error_log").insert({
+    section,
+    skill_id: q.skill_id,
+    difficulty: q.difficulty,
+    question_text: text,
+    her_answer: chosen,
+    correct_answer: q.answer,
+    reason,
+    question_id: questionId,
+    next_review_on: firstReview(today()),
+  });
+  if (insertError) {
+    // e.g. migration 0008 not run yet, so an untagged (null reason) miss can't be stored.
+    console.error("Saving drill miss failed", insertError);
+    return false;
+  }
   revalidatePath("/", "layout");
-  return { id: row.id };
+  return true;
 }

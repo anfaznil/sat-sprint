@@ -22,10 +22,14 @@ export function FocusPicker({ current }: { current: Focus }) {
     setError(null);
     startTransition(async () => {
       try {
-        await setFocus(next);
-      } catch (e) {
+        const result = await setFocus(next);
+        if (result.error) {
+          setLocal(previous);
+          setError(result.error);
+        }
+      } catch {
         setLocal(previous);
-        setError(e instanceof Error ? e.message : "Couldn't save.");
+        setError("Couldn't save. Check your connection and try again.");
       }
     });
   }

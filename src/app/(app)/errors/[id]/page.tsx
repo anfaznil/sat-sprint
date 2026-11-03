@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signScreenshots } from "@/lib/data/errors";
-import { ERROR_COLUMNS, REASONS, type ErrorItem } from "@/lib/errors";
+import { ERROR_COLUMNS, type ErrorItem } from "@/lib/errors";
+import { TagReason } from "./tag-reason";
 import { formatDay, today } from "@/lib/dates";
 import { SECTION_LABEL } from "@/lib/skills";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -61,10 +62,8 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
           <Answer label="You answered" value={item.her_answer} tone="bad" />
           <Answer label="Correct" value={item.correct_answer} tone="good" />
         </div>
-        <p className="text-sm">
-          {REASONS[item.reason].icon} <strong>{REASONS[item.reason].label}</strong>
-          <span className="text-muted"> · logged {formatDay(item.created_at.slice(0, 10))}</span>
-        </p>
+        <TagReason id={item.id} reason={item.reason} />
+        <p className="text-xs text-muted">Logged {formatDay(item.created_at.slice(0, 10))}</p>
         {item.notes && <p className="rounded-xl bg-accent-soft p-3 text-sm">💡 {item.notes}</p>}
         <TutorPanel kind="error" id={item.id} />
       </section>

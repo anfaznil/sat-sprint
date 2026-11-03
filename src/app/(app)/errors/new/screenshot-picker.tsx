@@ -44,7 +44,9 @@ export function ScreenshotPicker({
       if (!EXT[type]) throw new Error("Use a PNG, JPEG, WebP or HEIC image.");
       if (body.size > MAX_BYTES) throw new Error("That image is over 5 MB.");
 
-      const { path: next, token } = await prepareScreenshotUpload(EXT[type]);
+      const ticket = await prepareScreenshotUpload(EXT[type]);
+      if (ticket.error !== undefined) throw new Error(ticket.error);
+      const { path: next, token } = ticket;
       const { error } = await createClient()
         .storage.from("screenshots")
         .uploadToSignedUrl(next, token, body, { contentType: type });

@@ -36,10 +36,10 @@ export async function buildOpening(target: TutorTarget, userId: string): Promise
       data.question_text ? `Question:\n${data.question_text}` : "The question is in the attached screenshot.",
       `My answer: ${data.her_answer}`,
       `Correct answer: ${data.correct_answer}`,
-      `I think I missed it because: ${REASONS[data.reason as Reason]?.label ?? data.reason}`,
+      data.reason ? `I think I missed it because: ${REASONS[data.reason as Reason]?.label ?? data.reason}` : null,
       "Why was I wrong?",
     ];
-    return { text: lines.join("\n\n"), imagePath: data.screenshot_path };
+    return { text: lines.filter(Boolean).join("\n\n"), imagePath: data.screenshot_path };
   }
 
   const [{ data: q }, { data: attempt }] = await Promise.all([
