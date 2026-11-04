@@ -10,7 +10,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
 |---|---------|--------|
 | 1 | Skill map, Bluebook results entry, weakest → strongest dashboard | ✅ |
 | 2 | Error log with 1 → 3 → 7 day spaced review, charts | ✅ |
-| 3 | Daily 30-min drill with Claude-generated questions, streak | ✅ |
+| 3 | Daily timed SAT module (M1 → adaptive M2) with checked questions, streak | ✅ |
 | 4 | "Why was I wrong?" AI tutor + follow-up chat | ✅ |
 | 5 | Countdown + weekly plan | ✅ |
 | 6 | Grammar flashcards, Desmos tips | ✅ |
@@ -32,6 +32,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    7. `supabase/migrations/0007_section_focus.sql`: the "test focus" setting
    8. `supabase/migrations/0008_untagged_misses.sql`: lets drill misses save before they're tagged
    9. `supabase/migrations/0009_flashcard_quiz.sql`: 75 SAT-style grammar questions
+   10. `supabase/migrations/0010_timed_modules.sql`: timed SAT modules
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -104,19 +105,33 @@ In the error log, a review asks her to re-solve the question, tap **Show answer*
 ### Screenshots
 Phone screenshots are shrunk in the browser (max 1600px JPEG) and uploaded straight to the private `screenshots` bucket through a one-time signed upload URL from the server, because server actions cap request bodies at 1 MB. Pages show them through signed URLs that expire after an hour. Deleting an error also deletes its screenshot.
 
-### Daily drill (feature 3)
-1. **Reviews first.** Everything due in the error log, using the same review screen.
-2. **New questions next.** 8–15 of them (fewer on heavy review days), rotating through her **3 weakest skills**. If fewer than 3 skills have test data, it fills in untested skills from the biggest domains, alternating sections.
-3. **Difficulty adapts.** It starts from her test accuracy on the skill (under 50%: easy, under 75%: medium, otherwise hard). Then her last few drill answers on that skill move it up or down a level.
-4. **Questions are reused.** Stored questions she hasn't answered are served first. When a skill and difficulty runs out, Claude writes 3 more in one call. Each one is checked (4 distinct choices, a valid answer key, a passage for R&W, no LaTeX, sane lengths) and saved to `questions`. Invalid ones are discarded.
-5. **Answers are graded on the server.** The browser never gets the answer key before she answers. Typed math answers accept equivalent forms (7/2 = 3.5).
-6. **Misses go to the error log automatically.** Every wrong answer is saved right away (`reason` is null, shown as "Not tagged yet"). One-tap "why did you miss it?" buttons tag it, then or later from the item's page.
-7. **Score.** A running "✓ N right" shows during the drill, and the done screen shows the final score, the review score, and how many misses were saved. Home shows today's score.
-8. **Streak.** Consecutive days with a finished drill.
+### Daily timed module (feature 3)
+The daily session is **one real-format digital SAT module**: a few minutes of error-log reviews (untimed), then the module.
 
-The next question is fetched through a route handler (`/api/drill/next`) rather than a server action, so it can be written in the background while she works on the current one. Server actions run one at a time and would block her answer.
+| | Reading and Writing | Math |
+|---|---|---|
+| Questions / time | 27 in 32 minutes | 22 in 35 minutes |
+| Order | Grouped by type in SAT order: Words in Context → Text Structure → Cross-Text → Central Ideas → Evidence (textual, quantitative) → Inferences → Boundaries → Form/Structure/Sense → Transitions → Rhetorical Synthesis, easier to harder within each type | All four domains mixed (Algebra 7, Advanced Math 7, Problem-Solving & Data 4, Geometry & Trig 4), easier to harder overall; weaker skills get more of the domain's questions |
 
-**Model and cost:** `claude-opus-5-5` at medium effort, with structured JSON output, and `fallbacks: "default"` so a rare safety decline is retried on another model. Expect roughly $0.05–0.15 per generation call. A full drill with no reusable questions is about 5 calls, so well under $1 a day, and less as the question bank grows.
+**Adaptive like the SAT.** Module 1 has a balanced mix (9 easy / 9 medium / 9 hard for R&W). The next session is Module 2: the **harder** version (mostly hard) if Module 1 was at least 70% right, otherwise the **easier** version. After a Module 2, the next session starts a new Module 1. It follows the test focus setting; with both sections in focus, it alternates sections after each pair. (`src/lib/modules/blueprint.ts`, tested by `npm test`.)
+
+**The timed screen** (`/module/[id]`) is full-screen like Bluebook:
+- **Timer:** a countdown you can hide, with a 5-minute warning.
+- **Tools:** Mark for Review and an answer eliminator on every question.
+- **Moving around:** a "Question N of 27" navigator, Back/Next, and a Check Your Work page before submitting.
+- **Server-side deadline:** it's stored on the server, so reloading or leaving doesn't pause it. When time runs out the module submits itself, and coming back after the deadline grades what was answered.
+- **No early peeking:** answer keys never reach the phone before the module is submitted.
+
+**Questions at SAT difficulty.** Questions come from the stored bank when possible: ones she has never seen, at the slot's skill and difficulty. Otherwise, Claude (Opus, high effort) writes 3 at a time against a written difficulty guide (what easy, medium and hard look like on the real SAT, passage lengths, trap types), using the SAT's standard question wording. A **second, blind pass** then solves each question without the key and rates its difficulty. A question is kept only if that pass reaches the same answer, judges exactly one choice correct, and rates it within one level of the target. It's stored at the rated difficulty. Before the clock starts, the module's cover page fills empty slots with three parallel preparation requests (`/api/module/prepare`), showing progress and tips. A brand-new module with an empty bank takes a minute or two and about 18 Claude calls, so keep `AI_DAILY_LIMIT` at 40 or more. As the bank grows, modules fill instantly.
+
+**Results** (`/modules/[id]`):
+- **Summary:** the score, time used, and average seconds per question against SAT pace (71s R&W, 95s Math).
+- **Pacing chart:** time on each question, colored right/wrong/blank, with a pace line and time sinks called out.
+- **Accuracy by question type.**
+- **Full review:** every question with the explanation and the tutor.
+- **Misses:** saved to the error log automatically. Blank answers are tagged "timing".
+
+Submitting a module completes the day for the streak. `/modules` lists every module with its score. Saturdays stay full Bluebook practice tests (official, adaptive), and Dec 3–4 are reviews only.
 
 ### "Why was I wrong?" tutor (feature 4)
 The button appears on every error-log item (the detail page and the review screen) and under every drill answer ("Explain it more" when she got it right).
@@ -180,8 +195,9 @@ If migration 0007 hasn't been run, the app treats the focus as "both" and the pi
 supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
-  migrations/0003–0009            drill size, tutor storage + light days, flashcards,
-                                  passcode mode, test focus, untagged misses, grammar quiz
+  migrations/0003–0010            drill size, tutor storage + light days, flashcards,
+                                  passcode mode, test focus, untagged misses, grammar quiz,
+                                  timed modules
 src/
   proxy.ts                        passcode check on every request
   lib/

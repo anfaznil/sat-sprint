@@ -3,7 +3,9 @@ import { Suspense } from "react";
 import { requireMember } from "@/lib/auth";
 import { getSkillMap, getSkillResults } from "@/lib/data/skills";
 import { countDueErrors } from "@/lib/data/errors";
-import { getStreak, getTodayProgress } from "@/lib/data/drill";
+import { findTodaySession, getStreak } from "@/lib/data/drill";
+import { getTodayModule } from "@/lib/data/modules";
+import { FORMAT } from "@/lib/modules/blueprint";
 import { accuracyTone, FOCUS_LABEL, inFocus, rankSkills, type Focus, type SkillStat } from "@/lib/skills";
 import { getFocus } from "@/lib/data/settings";
 import { getXp } from "@/lib/data/xp";
@@ -25,11 +27,12 @@ export default function HomePage() {
 async function Dashboard() {
   const member = await requireMember();
   const focus = await getFocus();
+  const session = await findTodaySession(member.id);
   const [{ domains, skills }, results, dueReviews, progress, streak, xp] = await Promise.all([
     getSkillMap(),
     getSkillResults(),
     countDueErrors(focus),
-    getTodayProgress(member.id),
+    getTodayProgress(session),
     getStreak(member.id),
     getXp(),
   ]);
@@ -108,26 +111,44 @@ async function Dashboard() {
 
 type Cta = { href: string; title: string; detail: string; done?: boolean };
 
+type Progress = {
+  completed: boolean;
+  done: { score: number; total: number } | null;
+  open: { id: string; status: string } | null;
+  next: { label: string; minutes: number };
+};
+
+async function getTodayProgress(session: Awaited<ReturnType<typeof findTodaySession>>): Promise<Progress> {
+  const { open, done, next } = await getTodayModule(session?.id ?? null);
+  const tier = next.moduleNo === 2 ? ` (${next.tier})` : "";
+  return {
+    completed: Boolean(session?.completed_at),
+    done: done ? { score: done.score ?? 0, total: done.total } : null,
+    open: open ? { id: open.id, status: open.status } : null,
+    next: { label: `${next.section === "rw" ? "R&W" : "Math"} Module ${next.moduleNo}${tier}`, minutes: FORMAT[next.section].seconds / 60 },
+  };
+}
+
 // What to do today, as one button: the drill, the Saturday practice test, or rest.
-function todaysCta(kind: DayKind, due: number, progress: Awaited<ReturnType<typeof getTodayProgress>>): Cta {
+function todaysCta(kind: DayKind, due: number, progress: Progress): Cta {
   if (kind === "test") return { href: "/plan#test-day", title: "Good luck today!", detail: "Test-day checklist" };
+  if (progress.open?.status === "in_progress") {
+    return { href: `/module/${progress.open.id}`, title: "Resume your module", detail: "The clock is running" };
+  }
   if (progress.completed) {
     return {
       href: "/flashcards",
-      title: "Today's drill is done",
-      detail: `${progress.answered > 0 ? `${progress.score}/${progress.answered} right · ` : ""}Bonus: grammar cards`,
+      title: kind === "light" ? "Light review is done" : "Today's module is done",
+      detail: `${progress.done ? `${progress.done.score}/${progress.done.total} right · ` : ""}Bonus: grammar cards`,
       done: true,
     };
   }
   if (kind === "practice") return { href: "/tests/new", title: "Practice test day", detail: "Full Bluebook test, then log results" };
   if (kind === "light") return { href: "/drill", title: "Light review", detail: due > 0 ? `${due} quick review${due === 1 ? "" : "s"}` : "Grammar cards and rest" };
-  if (progress.started && progress.answered > 0) {
-    return { href: "/drill", title: "Continue today's drill", detail: `${progress.answered} of ${progress.planned} done · ${progress.score} right` };
-  }
   return {
     href: "/drill",
-    title: "Start today's drill",
-    detail: due > 0 ? `${due} review${due === 1 ? "" : "s"} + new questions · ~30 min` : "New questions on your focus skills · ~30 min",
+    title: "Start today's module",
+    detail: `${due > 0 ? `${due} review${due === 1 ? "" : "s"} + ` : ""}${progress.next.label} · ${progress.next.minutes} min`,
   };
 }
 
@@ -146,7 +167,7 @@ function Hero({
   kind: DayKind;
   focus: Focus;
   due: number;
-  progress: Awaited<ReturnType<typeof getTodayProgress>>;
+  progress: Progress;
   streak: number;
   xp: number;
 }) {

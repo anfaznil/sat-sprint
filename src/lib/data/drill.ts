@@ -35,30 +35,26 @@ export async function getTodaySession(userId: string): Promise<DrillSession> {
   return data;
 }
 
-// Today's progress for the home card, without creating a session.
-export async function getTodayProgress(userId: string) {
+// Today's drill session, if she has started one (never creates it).
+export async function findTodaySession(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("drill_sessions")
-    .select("id, completed_at, planned_new")
+    .select("id, drill_date, started_at, completed_at, planned_new")
     .eq("created_by", userId)
     .eq("drill_date", today())
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { started: false, answered: 0, score: 0, planned: null, completed: false };
-  const [answered, score] = await Promise.all([countAnswered(data.id), countCorrect(data.id)]);
-  return { started: true, answered, score, planned: data.planned_new, completed: Boolean(data.completed_at) };
+  return data as DrillSession | null;
 }
 
-export async function countCorrect(sessionId: string) {
+// Light review days have no module: finishing the reviews completes the day.
+export async function completeTodaySession(userId: string) {
   const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("question_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("session_id", sessionId)
-    .eq("correct", true);
-  if (error) throw error;
-  return count ?? 0;
+  const session = await getTodaySession(userId);
+  if (!session.completed_at) {
+    await supabase.from("drill_sessions").update({ completed_at: new Date().toISOString() }).eq("id", session.id);
+  }
 }
 
 export async function countAnswered(sessionId: string) {

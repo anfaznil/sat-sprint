@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChartSpline, ChevronRight, ClipboardList, Layers, Lock, Plus, Target } from "lucide-react";
+import { ChartSpline, ChevronRight, ClipboardList, Layers, Lock, Plus, Target, Timer } from "lucide-react";
 import { Suspense } from "react";
 import { requireMember } from "@/lib/auth";
 import { getFocus } from "@/lib/data/settings";
@@ -8,6 +8,7 @@ import { FocusPicker } from "./focus-picker";
 const LINKS = [
   { href: "/flashcards", icon: Layers, tone: "text-rw bg-rw/12", title: "Grammar cards", detail: "Commas, semicolons, colons, transitions, agreement" },
   { href: "/desmos", icon: ChartSpline, tone: "text-math bg-math/12", title: "Desmos tips", detail: "Graphing shortcuts for the Math section" },
+  { href: "/modules", icon: Timer, tone: "text-accent bg-accent-soft", title: "Timed modules", detail: "Scores and pacing from every module" },
   { href: "/tests", icon: ClipboardList, tone: "text-accent bg-accent-soft", title: "Practice tests", detail: "Your Bluebook results" },
   { href: "/tests/new", icon: Plus, tone: "text-accent bg-accent-soft", title: "Add Bluebook results", detail: "After each Saturday test" },
 ];

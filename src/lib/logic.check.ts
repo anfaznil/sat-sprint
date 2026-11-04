@@ -4,7 +4,8 @@ import { applyReview, firstReview } from "./spaced";
 import { computeStreak } from "./drill/streak";
 import { pickDifficulty, pickFocusSkills, plannedNewQuestions } from "./drill/plan";
 import type { Domain, Skill, SkillStat } from "./skills";
-import { drillXp, levelFor, totalXp } from "./xp";
+import { levelFor, totalXp } from "./xp";
+import { buildSlots, nextModule, spreadDifficulties, targetSeconds, type SkillInfo } from "./modules/blueprint";
 import { isCorrect, validateQuestion } from "./drill/validate";
 import { buildPlan, dayKind } from "./plan";
 import { createSession, passcodeMatches, verifySession } from "./session";
@@ -55,10 +56,44 @@ eq(levelFor(0), { level: 1, into: 0, span: 100 }, "level 1 start");
 eq(levelFor(99), { level: 1, into: 99, span: 100 }, "just under level 2");
 eq(levelFor(100), { level: 2, into: 0, span: 150 }, "level 2");
 eq(levelFor(260), { level: 3, into: 10, span: 200 }, "level 3");
-eq(drillXp(9, 12, { right: 3, total: 4 }, true), 9 * 10 + 3 * 3 + 3 * 8 + 1 * 3 + 25, "drill sitting xp");
-eq(drillXp(0, 0, null, false), 0, "no activity");
 eq(totalXp({ drillRight: 1, drillWrong: 1, reviewRight: 1, reviewWrong: 1, drillsCompleted: 1, missesLogged: 1, practiceTests: 1, cardsStarted: 1, cardsMastered: 1 }),
   10 + 3 + 8 + 3 + 25 + 5 + 50 + 2 + 10, "total xp");
+
+// Timed modules
+const mathSkills: SkillInfo[] = [
+  { id: "linear_functions", domain_id: "algebra", sort: 2, accuracy: 0.4 },
+  { id: "systems_linear", domain_id: "algebra", sort: 4, accuracy: null },
+  { id: "linear_eq_one_var", domain_id: "algebra", sort: 1, accuracy: 0.9 },
+  { id: "nonlinear_functions", domain_id: "advanced_math", sort: 3, accuracy: 0.5 },
+  { id: "equivalent_expressions", domain_id: "advanced_math", sort: 1, accuracy: 0.8 },
+  { id: "percentages", domain_id: "psda", sort: 2, accuracy: null },
+  { id: "circles", domain_id: "geo_trig", sort: 4, accuracy: 0.3 },
+];
+const rwSlots = buildSlots("rw", "standard", []);
+eq(rwSlots.length, 27, "rw module has 27 questions");
+eq(rwSlots.map((s) => s.position), Array.from({ length: 27 }, (_, i) => i + 1), "positions 1..27");
+eq(rwSlots[0].skill_id, "words_in_context", "rw starts with words in context");
+eq(rwSlots.at(-1)!.skill_id, "rhetorical_synthesis", "rw ends with rhetorical synthesis");
+eq(rwSlots.filter((s) => s.skill_id === "boundaries").length, 4, "4 boundaries questions");
+const rank = { easy: 0, medium: 1, hard: 2 } as const;
+eq(rwSlots.filter((s) => s.skill_id === "boundaries").every((s, i, a) => i === 0 || rank[a[i - 1].difficulty] <= rank[s.difficulty]), true, "easy→hard within a type");
+const countBy = (slots: { difficulty: string }[]) =>
+  Object.fromEntries(["easy", "medium", "hard"].map((d) => [d, slots.filter((s) => s.difficulty === d).length]));
+eq(countBy(rwSlots), { easy: 9, medium: 9, hard: 9 }, "standard mix");
+eq(countBy(buildSlots("rw", "harder", [])), { easy: 4, medium: 9, hard: 14 }, "harder mix");
+const mathSlots = buildSlots("math", "standard", mathSkills);
+eq(mathSlots.length, 22, "math module has 22 questions");
+eq(mathSlots.every((s, i, a) => i === 0 || rank[a[i - 1].difficulty] <= rank[s.difficulty]), true, "math easy→hard overall");
+eq(mathSlots.filter((s) => s.skill_id === "linear_functions").length >= mathSlots.filter((s) => s.skill_id === "linear_eq_one_var").length, true, "weak skills get more");
+eq(spreadDifficulties({ easy: 1, medium: 1, hard: 1 }).length, 3, "spread length");
+eq(targetSeconds("rw"), 71, "rw pace ~71s"); eq(targetSeconds("math"), 95, "math pace ~95s");
+const m1 = { id: "m1", section: "rw" as const, module_no: 1 as const, score: 20, total: 27, parent_id: null };
+eq(nextModule([], "rw"), { section: "rw", moduleNo: 1, tier: "standard", parentId: null }, "first module");
+eq(nextModule([m1], "rw"), { section: "rw", moduleNo: 2, tier: "harder", parentId: "m1" }, "M1 20/27 → harder M2");
+eq(nextModule([{ ...m1, score: 15 }], "rw").tier, "easier", "M1 15/27 → easier M2");
+eq(nextModule([{ ...m1, id: "m2", module_no: 2, parent_id: "m1" }, m1], "rw"), { section: "rw", moduleNo: 1, tier: "standard", parentId: null }, "after M2 → new M1");
+eq(nextModule([{ ...m1, id: "m2", module_no: 2, parent_id: "m1" }], "both").section, "math", "both: switch section after a pair");
+eq(nextModule([m1], "math"), { section: "math", moduleNo: 1, tier: "standard", parentId: null }, "math focus ignores R&W history");
 
 async function sessionChecks() {
   process.env.SESSION_SECRET = "test-secret-test-secret-test-secret-1234";

@@ -63,7 +63,7 @@ async function Plan() {
         <h2 className="mb-2 font-semibold">How the plan works</h2>
         <ul className="space-y-1 text-muted">
           <li><Ico icon={ClipboardList} className="mr-1.5 text-accent" /><strong className="text-ink">Saturdays:</strong> a full Bluebook practice test, like the real thing.</li>
-          <li><Ico icon={Zap} className="mr-1.5 text-accent" /><strong className="text-ink">Other days:</strong> the 30-minute daily drill.</li>
+          <li><Ico icon={Zap} className="mr-1.5 text-accent" /><strong className="text-ink">Other days:</strong> quick reviews, then one timed SAT module (Module 1, then an adaptive Module 2).</li>
           <li><Ico icon={Leaf} className="mr-1.5 text-good" /><strong className="text-ink">Dec 3–4:</strong> light review only. Rest your brain.</li>
         </ul>
       </section>

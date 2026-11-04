@@ -39,7 +39,7 @@ export function buildPlan(today: string): { weekOf: string; days: PlanDay[] }[] 
 }
 
 export const DAY_LABEL: Record<DayKind, { title: string; detail: string; icon: LucideIcon }> = {
-  drill: { title: "Daily drill", detail: "Reviews + new questions, ~30 min", icon: Zap },
+  drill: { title: "Timed module", detail: "Error-log reviews + one timed SAT module (~40 min)", icon: Zap },
   practice: { title: "Full practice test", detail: "Bluebook, timed, in one sitting, then log results", icon: ClipboardList },
   light: { title: "Light review only", detail: "Error-log reviews and grammar cards. No new material.", icon: Leaf },
   test: { title: "SAT day!", detail: "You've got this.", icon: Target },

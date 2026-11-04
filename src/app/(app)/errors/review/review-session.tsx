@@ -55,7 +55,7 @@ export function ReviewSession({
         </p>
         {onFinish ? (
           <button className="btn-primary mt-5" onClick={() => onFinish({ right: tally.right, total: items.length })}>
-            On to new questions →
+            On to the timed module →
           </button>
         ) : (
           <Link href="/" className="btn-primary mt-5">

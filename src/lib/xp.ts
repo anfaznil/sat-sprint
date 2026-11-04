@@ -49,13 +49,3 @@ export function levelFor(xp: number) {
   }
   return { level, into: xp - floor, span };
 }
-
-// XP from one drill sitting, for the done screen.
-export function drillXp(right: number, answered: number, reviews: { right: number; total: number } | null, completed: boolean) {
-  return (
-    right * XP.drillRight +
-    (answered - right) * XP.drillWrong +
-    (reviews ? reviews.right * XP.reviewRight + (reviews.total - reviews.right) * XP.reviewWrong : 0) +
-    (completed ? XP.drillComplete : 0)
-  );
-}

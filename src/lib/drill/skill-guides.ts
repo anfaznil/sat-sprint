@@ -1,3 +1,19 @@
+// The standard wording of each R&W question type on the digital SAT. The SAT reuses these
+// stems on every test; the passages and choices are what change.
+export const SKILL_STEMS: Record<string, string> = {
+  central_ideas: "Which choice best states the main idea of the text?",
+  inferences: "Which choice most logically completes the text?",
+  evidence_textual: "Which quotation from the text most effectively illustrates the claim? / Which finding, if true, would most directly support the researchers' hypothesis?",
+  evidence_quantitative: "Which choice most effectively uses data from the table/graph to complete the statement?",
+  words_in_context: "Which choice completes the text with the most logical and precise word or phrase?",
+  text_structure: "Which choice best describes the function of the underlined sentence in the text as a whole? / Which choice best states the main purpose of the text?",
+  cross_text: "Based on the texts, how would the author of Text 2 most likely respond to the claim in Text 1?",
+  rhetorical_synthesis: "While researching a topic, a student has taken the following notes: … The student wants to [goal]. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+  transitions: "Which choice completes the text with the most logical transition?",
+  boundaries: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+  form_structure_sense: "Which choice completes the text so that it conforms to the conventions of Standard English?",
+};
+
 // What each digital SAT skill tests, in our own words, to steer question generation.
 export const SKILL_GUIDES: Record<string, string> = {
   central_ideas: "Short passage (25–150 words) from literature, history/social studies, humanities or science; ask for the main idea or a key detail.",

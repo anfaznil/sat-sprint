@@ -6,10 +6,10 @@ import { BookX, CalendarDays, House, Menu, Zap } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Home", icon: House, match: [] as string[] },
-  { href: "/drill", label: "Drill", icon: Zap, match: [] },
+  { href: "/drill", label: "Today", icon: Zap, match: [] },
   { href: "/errors", label: "Error log", icon: BookX, match: [] },
   { href: "/plan", label: "Plan", icon: CalendarDays, match: [] },
-  { href: "/more", label: "More", icon: Menu, match: ["/tests", "/flashcards", "/desmos"] },
+  { href: "/more", label: "More", icon: Menu, match: ["/tests", "/flashcards", "/desmos", "/modules"] },
 ];
 
 export function BottomNav() {
