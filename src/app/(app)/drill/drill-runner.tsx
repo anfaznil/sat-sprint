@@ -126,7 +126,7 @@ function ModuleCard({ mod }: { mod: ModuleInfo }) {
     }).catch(() => null);
     const data = res?.ok ? await res.json() : null;
     if (data) setProgress({ filled: data.filled, total: data.total, ready: data.ready });
-    else setProblem("Couldn't check the question bank. Try again.");
+    setProblem(data ? (data.error ?? null) : "Couldn't check the question bank. Try again.");
   }
 
   function start() {

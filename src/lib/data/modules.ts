@@ -10,6 +10,7 @@ import { getSkillMap, getSkillResults } from "./skills";
 import { getFocus } from "./settings";
 import { getTodaySession } from "./drill";
 import { saveMiss } from "./misses";
+import BANK from "@/lib/modules/question-bank.json";
 
 export type ModuleRow = {
   id: string;
@@ -79,7 +80,8 @@ export async function getOrCreateModule(): Promise<ModuleRow> {
     if (m.status === "in_progress" && m.deadline_at && Date.now() > Date.parse(m.deadline_at) + GRACE_MS) {
       await submitModule(m.id);
     } else {
-      return m;
+      if (m.status === "preparing") await prepareStep(m.id);
+      return (await getModule(m.id))!;
     }
   }
 
@@ -175,7 +177,23 @@ async function fillFromBank(moduleId: string, relax = false) {
   }
 }
 
-export type PrepareResult = { filled: number; total: number; ready: boolean };
+export type PrepareResult = { filled: number; total: number; ready: boolean; error?: string };
+
+// Adds any hand-written questions the database doesn't have yet. Runs from the app, so the
+// bank loads without pasting anything into the SQL editor. Safe to repeat.
+async function ensureBank(): Promise<string | undefined> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("questions").select("passage, stem").eq("model", "hand-written").limit(5000);
+  if (error) return error.message;
+  const have = new Set((data ?? []).map((q) => `${q.passage}|${q.stem}`));
+  const missing = BANK.filter((q) => !have.has(`${q.passage}|${q.stem}`)).map((q) => ({ ...q, model: "hand-written" }));
+  if (missing.length === 0) return undefined;
+  const { error: insertError } = await supabase.from("questions").insert(missing);
+  if (insertError) {
+    console.error("Loading the question bank failed", insertError);
+    return `Couldn't load the question bank: ${insertError.message}`;
+  }
+}
 
 // Fills a module from the hand-written question bank (no paid API calls). Exact skill and
 // difficulty matches go first, then the closest available difficulty for that skill.
@@ -184,7 +202,9 @@ export async function prepareStep(moduleId: string): Promise<PrepareResult> {
   const mod = await getModule(moduleId);
   if (!mod) return { filled: 0, total: 0, ready: false };
 
+  let error: string | undefined;
   if (mod.status === "preparing") {
+    error = await ensureBank();
     await fillFromBank(moduleId);
     await fillFromBank(moduleId, true);
   }
@@ -199,7 +219,7 @@ export async function prepareStep(moduleId: string): Promise<PrepareResult> {
   if (ready && mod.status === "preparing") {
     await supabase.from("modules").update({ status: "ready" }).eq("id", moduleId).eq("status", "preparing");
   }
-  return { filled, total: mod.total, ready: ready || mod.status !== "preparing" };
+  return { filled, total: mod.total, ready: ready || mod.status !== "preparing", error };
 }
 
 // Starts the clock. The deadline lives on the server, so reloading or switching apps

@@ -33,7 +33,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    8. `supabase/migrations/0008_untagged_misses.sql`: lets drill misses save before they're tagged
    9. `supabase/migrations/0009_flashcard_quiz.sql`: 75 SAT-style grammar questions
    10. `supabase/migrations/0010_timed_modules.sql`: timed SAT modules
-   11. `supabase/migrations/0011_question_bank.sql`: 162 hand-written Reading and Writing questions
+   11. `supabase/migrations/0011_question_bank.sql` (optional): 162 hand-written Reading and Writing questions. The app also loads these by itself the first time a module is prepared.
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -125,10 +125,10 @@ The daily session is **one real-format digital SAT module**: a few minutes of er
 
 **Questions: no API cost.** Modules are filled from a hand-written bank, so nothing is generated at runtime and modules start instantly. The bank has 162 Reading and Writing questions (54 easy, 54 medium, 54 hard), enough for about 6 full modules. A question she has seen is never reused. A slot takes an exact skill and difficulty match first, then the closest difficulty for that skill. If a skill runs out, or for Math (no Math questions yet), the module's cover page says more questions are needed.
 
-To add questions, edit or add a JSON file in `scripts/question-bank/`, then build a **new** migration containing only the new file (the build checks structure, duplicates and passage lengths, and balances answer letters):
+To add questions, edit or add a JSON file in `scripts/question-bank/` and rebuild with every file listed. The build checks structure, duplicates and passage lengths, balances answer letters, and updates `src/lib/modules/question-bank.json`, which the app loads into the database on its own (only questions it doesn't have yet):
 
 ```bash
-python3 scripts/question-bank/build.py supabase/migrations/0012_more_questions.sql scripts/question-bank/new-file.json
+python3 scripts/question-bank/build.py supabase/migrations/0011_question_bank.sql scripts/question-bank/{craft,ideas,conventions,expression}.json
 ```
 
 Difficulty is the question writer's judgment, based on real SAT patterns. It isn't calibrated against College Board data. Bluebook and the SAT Suite Question Bank remain the official benchmarks.

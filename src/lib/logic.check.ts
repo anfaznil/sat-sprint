@@ -5,6 +5,7 @@ import { computeStreak } from "./drill/streak";
 import { pickDifficulty, pickFocusSkills, plannedNewQuestions } from "./drill/plan";
 import type { Domain, Skill, SkillStat } from "./skills";
 import { levelFor, totalXp } from "./xp";
+import BANK from "./modules/question-bank.json";
 import { buildSlots, nextModule, spreadDifficulties, targetSeconds, type SkillInfo } from "./modules/blueprint";
 import { isCorrect, validateQuestion } from "./drill/validate";
 import { buildPlan, dayKind } from "./plan";
@@ -58,6 +59,11 @@ eq(levelFor(100), { level: 2, into: 0, span: 150 }, "level 2");
 eq(levelFor(260), { level: 3, into: 10, span: 200 }, "level 3");
 eq(totalXp({ drillRight: 1, drillWrong: 1, reviewRight: 1, reviewWrong: 1, drillsCompleted: 1, missesLogged: 1, practiceTests: 1, cardsStarted: 1, cardsMastered: 1 }),
   10 + 3 + 8 + 3 + 25 + 5 + 50 + 2 + 10, "total xp");
+
+// Question bank the app loads itself
+eq(BANK.length, 162, "bank size");
+eq(BANK.every((q) => q.choices.length === 4 && "ABCD".includes(q.answer) && q.stem && q.explanation), true, "bank rows complete");
+eq(new Set(BANK.map((q) => `${q.passage}|${q.stem}`)).size, 162, "bank rows unique");
 
 // Timed modules
 const mathSkills: SkillInfo[] = [

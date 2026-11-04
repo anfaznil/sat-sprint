@@ -69,6 +69,9 @@ from jsonb_to_recordset(convert_from(decode('
 where not exists (select 1 from public.questions x where x.passage = q.passage and x.stem = q.stem);
 """)
 
+# The app loads this copy itself, so the bank doesn't depend on the SQL editor.
+json.dump(rows, open("src/lib/modules/question-bank.json", "w"), ensure_ascii=False)
+
 print(len(items), "questions")
 print("difficulty", dict(Counter(q["d"] for _, q in items)))
 print("per skill", dict(Counter(s for s, _ in items)))
