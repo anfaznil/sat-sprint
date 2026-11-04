@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { Clock, Flame, Leaf, Lightbulb, ListChecks, PartyPopper, Play } from "lucide-react";
+import { useCallback, useState, useTransition } from "react";
+import { Clock, Flame, Leaf, ListChecks, PartyPopper, Play } from "lucide-react";
 import type { ErrorItem } from "@/lib/errors";
-import { TIPS } from "@/lib/tips";
 import { FORMAT } from "@/lib/modules/blueprint";
 import { IconTile } from "@/components/icon-tile";
 import { ReviewSession } from "../errors/review/review-session";
@@ -115,55 +114,20 @@ function ModuleCard({ mod }: { mod: ModuleInfo }) {
   );
   const [problem, setProblem] = useState<string | null>(null);
   const [starting, startTransition] = useTransition();
-  const [attempt, setAttempt] = useState(0);
   const section = FORMAT[mod.section].label;
   const title = `${mod.section === "rw" ? "Section 1" : "Section 2"}, Module ${mod.moduleNo}: ${section}`;
 
-  // Writes the module's questions: three parallel lanes, each repeating preparation steps
-  // until every slot is filled. Stops on a hard error (daily AI limit, missing key).
-  // Each mount owns its lanes; cleanup stops them (a request already in flight finishes,
-  // and its questions still land in the bank).
-  useEffect(() => {
-    if (mod.status !== "preparing") return;
-    let stop = false;
-    let failures = 0;
-    async function lane(n: number) {
-      for (let step = 0; step < 25 && !stop; step++) {
-        try {
-          const res = await fetch("/api/module/prepare", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ moduleId: mod.id, lane: n }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error ?? "Preparation failed");
-          setProgress({ filled: data.filled, total: data.total, ready: data.ready });
-          if (data.ready) {
-            stop = true;
-            return;
-          }
-          if (data.error) {
-            setProblem(data.error);
-            if (/limit|ANTHROPIC/i.test(data.error) || ++failures > 6) {
-              stop = true;
-              return;
-            }
-          }
-        } catch (e) {
-          if (++failures > 6) {
-            setProblem(e instanceof Error ? e.message : "Preparation failed");
-            stop = true;
-            return;
-          }
-          await new Promise((r) => setTimeout(r, 2000));
-        }
-      }
-    }
-    Promise.all([lane(0), lane(1), lane(2)]);
-    return () => {
-      stop = true;
-    };
-  }, [mod.id, mod.status, attempt]);
+  async function recheck() {
+    setProblem(null);
+    const res = await fetch("/api/module/prepare", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ moduleId: mod.id }),
+    }).catch(() => null);
+    const data = res?.ok ? await res.json() : null;
+    if (data) setProgress({ filled: data.filled, total: data.total, ready: data.ready });
+    else setProblem("Couldn't check the question bank. Try again.");
+  }
 
   function start() {
     setProblem(null);
@@ -210,58 +174,20 @@ function ModuleCard({ mod }: { mod: ModuleInfo }) {
             <Play aria-hidden className="size-4 fill-white" /> {starting ? "Starting…" : `Start the ${mod.minutes}-minute clock`}
           </button>
         ) : (
-          <Preparing progress={progress} total={mod.total} />
-        )}
-
-        {problem && !ready && (
-          <div className="rounded-xl bg-bad/10 p-3 text-sm">
-            <p className="text-bad">{problem}</p>
-            <button
-              type="button"
-              className="mt-1 font-medium underline"
-              onClick={() => {
-                setProblem(null);
-                setAttempt((a) => a + 1);
-              }}
-            >
-              Try again
+          <div className="rounded-xl bg-warn/10 p-4 text-sm">
+            <p className="font-medium">
+              {mod.section === "math" ? "Math modules aren't in the question bank yet." : "The question bank is running low."}
+            </p>
+            <p className="mt-1 text-muted">
+              This module needs more questions before it can start{progress ? ` (${progress.filled}/${mod.total} ready)` : ""}. More can be added to the bank.
+            </p>
+            <button type="button" className="mt-2 font-medium underline" onClick={recheck}>
+              Check again
             </button>
           </div>
         )}
+        {problem && <p className="text-sm text-bad">{problem}</p>}
       </div>
     </section>
   );
 }
-
-function Preparing({ progress, total }: { progress: { filled: number; total: number } | null; total: number }) {
-  const filled = progress?.filled ?? 0;
-  const [tip, setTip] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTip((t) => t + 1), 7000);
-    return () => clearInterval(id);
-  }, []);
-  const t = TIPS[(tip * 5 + 3) % TIPS.length];
-  return (
-    <div className="space-y-3" aria-busy>
-      <div>
-        <div className="flex justify-between text-sm">
-          <span className="font-medium">Writing and checking your questions…</span>
-          <span className="tabular-nums text-muted">
-            {filled}/{total}
-          </span>
-        </div>
-        <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-line/70">
-          <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${Math.max(4, (filled / total) * 100)}%` }} />
-        </div>
-        <p className="mt-1 text-xs text-muted">Fresh questions take a minute or two. The timer won&apos;t start until you tap Start.</p>
-      </div>
-      <div key={tip} className="animate-rise rounded-2xl bg-accent-soft/70 p-4">
-        <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-accent">
-          <Lightbulb aria-hidden className="size-3.5" /> {t.kind} tip
-        </p>
-        <p className="text-[15px] leading-relaxed">{t.text}</p>
-      </div>
-    </div>
-  );
-}
-

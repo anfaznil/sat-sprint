@@ -5,9 +5,7 @@ import { STUDENT_ID } from "@/lib/auth";
 import type { Difficulty } from "@/lib/errors";
 import { rankSkills, type Section } from "@/lib/skills";
 import { buildSlots, FORMAT, nextModule, type ModuleNo, type PastModule, type Tier } from "@/lib/modules/blueprint";
-import { generateQuestions } from "@/lib/drill/generate";
 import { isCorrect } from "@/lib/drill/validate";
-import { AiLimitError, AiUnavailableError } from "@/lib/ai/claude";
 import { getSkillMap, getSkillResults } from "./skills";
 import { getFocus } from "./settings";
 import { getTodaySession } from "./drill";
@@ -120,8 +118,7 @@ export async function getOrCreateModule(): Promise<ModuleRow> {
   if (itemsError) throw itemsError;
 
   const mod = created as ModuleRow;
-  // Fill whatever the question bank already covers right away.
-  await fillFromBank(mod.id);
+  await prepareStep(mod.id);
   return (await getModule(mod.id))!;
 }
 
@@ -136,9 +133,9 @@ async function seenQuestionIds() {
   return new Set([...(attempts.data ?? []), ...(assigned.data ?? [])].map((r) => r.question_id as string));
 }
 
-// Fills empty slots with questions she has never seen. With `relax`, a slot may take a
-// question one difficulty level away (used only after fresh generation still came up short).
-async function fillFromBank(moduleId: string, only?: { skill_id: string }, relax = false) {
+// Fills empty slots with questions she has never seen. With `relax`, a slot may take the
+// closest available difficulty for its skill (used only after exact matches are exhausted).
+async function fillFromBank(moduleId: string, relax = false) {
   const supabase = await createClient();
   const { data: items } = await supabase
     .from("module_items")
@@ -146,7 +143,7 @@ async function fillFromBank(moduleId: string, only?: { skill_id: string }, relax
     .eq("module_id", moduleId)
     .is("question_id", null)
     .order("position");
-  const empty = ((items ?? []) as Item[]).filter((i) => !only || i.skill_id === only.skill_id);
+  const empty = (items ?? []) as Item[];
   if (empty.length === 0) return;
 
   const seen = await seenQuestionIds();
@@ -164,6 +161,7 @@ async function fillFromBank(moduleId: string, only?: { skill_id: string }, relax
     let index = available.findIndex((q) => q.skill_id === item.skill_id && q.difficulty === item.difficulty);
     if (index < 0 && relax) {
       index = available.findIndex((q) => q.skill_id === item.skill_id && near[item.difficulty].includes(q.difficulty));
+      if (index < 0) index = available.findIndex((q) => q.skill_id === item.skill_id);
     }
     if (index < 0) continue;
     const [q] = available.splice(index, 1);
@@ -177,61 +175,18 @@ async function fillFromBank(moduleId: string, only?: { skill_id: string }, relax
   }
 }
 
-export type PrepareResult = { filled: number; total: number; ready: boolean; error?: string };
+export type PrepareResult = { filled: number; total: number; ready: boolean };
 
-// One preparation step: picks a (skill, difficulty) group that still has empty slots and
-// writes fresh questions for it. The client runs a few of these in parallel ("lanes")
-// until the module is full; each step stays well under a serverless time limit.
-export async function prepareStep(moduleId: string, lane: number): Promise<PrepareResult> {
+// Fills a module from the hand-written question bank (no paid API calls). Exact skill and
+// difficulty matches go first, then the closest available difficulty for that skill.
+export async function prepareStep(moduleId: string): Promise<PrepareResult> {
   const supabase = await createClient();
   const mod = await getModule(moduleId);
-  if (!mod) return { filled: 0, total: 0, ready: false, error: "Module not found." };
+  if (!mod) return { filled: 0, total: 0, ready: false };
 
-  const { data: items } = await supabase
-    .from("module_items")
-    .select("position, skill_id, difficulty, question_id")
-    .eq("module_id", moduleId)
-    .order("position");
-  const all = (items ?? []) as Item[];
-  const empty = all.filter((i) => !i.question_id);
-
-  let error: string | undefined;
-  if (empty.length > 0 && mod.status === "preparing") {
-    const groups = [...new Map(empty.map((i) => [`${i.skill_id}|${i.difficulty}`, i])).values()];
-    const target = groups[lane % groups.length];
-    try {
-      const { data: skill } = await supabase.from("skills").select("name, domains(name, section)").eq("id", target.skill_id).single();
-      const domain = skill!.domains as unknown as { name: string; section: Section };
-      const { data: recent } = await supabase
-        .from("questions")
-        .select("stem")
-        .eq("skill_id", target.skill_id)
-        .order("created_at", { ascending: false })
-        .limit(15);
-      const fresh = await generateQuestions({
-        skillId: target.skill_id,
-        skillName: skill!.name,
-        domainName: domain.name,
-        section: domain.section,
-        difficulty: target.difficulty,
-        avoidStems: (recent ?? []).map((r) => r.stem),
-      });
-      if (fresh.length > 0) {
-        const { error: insertError } = await supabase.from("questions").insert(fresh);
-        if (insertError) throw insertError;
-      }
-      await fillFromBank(moduleId, { skill_id: target.skill_id });
-      // Still short after a fresh batch: accept a question one level off rather than stall.
-      await fillFromBank(moduleId, { skill_id: target.skill_id }, true);
-    } catch (e) {
-      error =
-        e instanceof AiLimitError
-          ? e.message
-          : e instanceof AiUnavailableError
-            ? "Question writing isn't set up yet (missing ANTHROPIC_API_KEY)."
-            : "Couldn't write questions just now. It'll keep trying.";
-      if (!(e instanceof AiLimitError || e instanceof AiUnavailableError)) console.error("prepareStep failed", e);
-    }
+  if (mod.status === "preparing") {
+    await fillFromBank(moduleId);
+    await fillFromBank(moduleId, true);
   }
 
   const { count } = await supabase
@@ -244,7 +199,7 @@ export async function prepareStep(moduleId: string, lane: number): Promise<Prepa
   if (ready && mod.status === "preparing") {
     await supabase.from("modules").update({ status: "ready" }).eq("id", moduleId).eq("status", "preparing");
   }
-  return { filled, total: mod.total, ready: ready || mod.status !== "preparing", error };
+  return { filled, total: mod.total, ready: ready || mod.status !== "preparing" };
 }
 
 // Starts the clock. The deadline lives on the server, so reloading or switching apps

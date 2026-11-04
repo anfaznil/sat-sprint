@@ -10,7 +10,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
 |---|---------|--------|
 | 1 | Skill map, Bluebook results entry, weakest → strongest dashboard | ✅ |
 | 2 | Error log with 1 → 3 → 7 day spaced review, charts | ✅ |
-| 3 | Daily timed SAT module (M1 → adaptive M2) with checked questions, streak | ✅ |
+| 3 | Daily timed SAT module (M1 → adaptive M2) from a hand-written bank, streak | ✅ |
 | 4 | "Why was I wrong?" AI tutor + follow-up chat | ✅ |
 | 5 | Countdown + weekly plan | ✅ |
 | 6 | Grammar flashcards, Desmos tips | ✅ |
@@ -33,6 +33,7 @@ Stack: Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 ·
    8. `supabase/migrations/0008_untagged_misses.sql`: lets drill misses save before they're tagged
    9. `supabase/migrations/0009_flashcard_quiz.sql`: 75 SAT-style grammar questions
    10. `supabase/migrations/0010_timed_modules.sql`: timed SAT modules
+   11. `supabase/migrations/0011_question_bank.sql`: 162 hand-written Reading and Writing questions
 
    With the Supabase CLI instead: `supabase link`, then `supabase db push`.
 
@@ -51,8 +52,8 @@ Copy `.env.example` to `.env.local` and fill it in:
 | `SUPABASE_SECRET_KEY` | Same page: the **secret** key (`sb_secret_…`) or the legacy `service_role` key. **Server only. Never share it or put it in client code.** |
 | `APP_PASSCODE` | You choose it. What Aleena types once per device. A few words (e.g. `purple otter 2026`) beat a short PIN. |
 | `SESSION_SECRET` | A random string of 32+ characters: `openssl rand -base64 32` |
-| `ANTHROPIC_API_KEY` | console.anthropic.com. Server only. |
-| `AI_DAILY_LIMIT` | Max Claude calls per day for the whole app (default 40) |
+| `ANTHROPIC_API_KEY` | console.anthropic.com. Server only. Used only by the tutor. |
+| `AI_DAILY_LIMIT` | Max tutor messages per day for the whole app (default 40) |
 | `APP_TIMEZONE` | Aleena's IANA time zone, e.g. `America/New_York`. Makes "today" roll over at her midnight, not at UTC midnight. |
 | `STUDENT_NAME` | Name on the home screen (default `Aleena`) |
 
@@ -122,7 +123,15 @@ The daily session is **one real-format digital SAT module**: a few minutes of er
 - **Server-side deadline:** it's stored on the server, so reloading or leaving doesn't pause it. When time runs out the module submits itself, and coming back after the deadline grades what was answered.
 - **No early peeking:** answer keys never reach the phone before the module is submitted.
 
-**Questions at SAT difficulty.** Questions come from the stored bank when possible: ones she has never seen, at the slot's skill and difficulty. Otherwise, Claude (Opus, high effort) writes 3 at a time against a written difficulty guide (what easy, medium and hard look like on the real SAT, passage lengths, trap types), using the SAT's standard question wording. A **second, blind pass** then solves each question without the key and rates its difficulty. A question is kept only if that pass reaches the same answer, judges exactly one choice correct, and rates it within one level of the target. It's stored at the rated difficulty. Before the clock starts, the module's cover page fills empty slots with three parallel preparation requests (`/api/module/prepare`), showing progress and tips. A brand-new module with an empty bank takes a minute or two and about 18 Claude calls, so keep `AI_DAILY_LIMIT` at 40 or more. As the bank grows, modules fill instantly.
+**Questions: no API cost.** Modules are filled from a hand-written bank, so nothing is generated at runtime and modules start instantly. The bank has 162 Reading and Writing questions (54 easy, 54 medium, 54 hard), enough for about 6 full modules. A question she has seen is never reused. A slot takes an exact skill and difficulty match first, then the closest difficulty for that skill. If a skill runs out, or for Math (no Math questions yet), the module's cover page says more questions are needed.
+
+To add questions, edit or add a JSON file in `scripts/question-bank/`, then build a **new** migration containing only the new file (the build checks structure, duplicates and passage lengths, and balances answer letters):
+
+```bash
+python3 scripts/question-bank/build.py supabase/migrations/0012_more_questions.sql scripts/question-bank/new-file.json
+```
+
+Difficulty is the question writer's judgment, based on real SAT patterns. It isn't calibrated against College Board data. Bluebook and the SAT Suite Question Bank remain the official benchmarks.
 
 **Results** (`/modules/[id]`):
 - **Summary:** the score, time used, and average seconds per question against SAT pace (71s R&W, 95s Math).
@@ -195,9 +204,9 @@ If migration 0007 hasn't been run, the app treats the focus as "both" and the pi
 supabase/
   migrations/0001_schema.sql      tables, RLS, rate limit fn, storage bucket
   migrations/0002_seed_skills.sql domains + skills
-  migrations/0003–0010            drill size, tutor storage + light days, flashcards,
+  migrations/0003–0011            drill size, tutor storage + light days, flashcards,
                                   passcode mode, test focus, untagged misses, grammar quiz,
-                                  timed modules
+                                  timed modules, question bank
 src/
   proxy.ts                        passcode check on every request
   lib/
@@ -212,7 +221,7 @@ src/
     tutor/context.ts              tutor system prompt + question context
     plan.ts                       day types (drill / practice / light / test), weekly plan
     flashcards.ts                 card topics
-    drill/                        generate (Claude), validate, plan, streak, next question
+    drill/                        answer grading, streak
     logic.check.ts                npm test
     data/skills.ts                skill map + results queries
     data/errors.ts                error log queries, signed screenshot URLs
@@ -227,7 +236,7 @@ src/
     (app)/tests/                  test list, new-test form, server actions
     (app)/errors/                 log + charts, new, [id] detail, review session, actions
     (app)/drill/                  drill runner, question player, answer/log actions
-    api/drill/next/route.ts       next question (generates if needed)
+    api/module/prepare/route.ts   re-checks the bank for an unfilled module
     api/tutor/{thread,message}    open a tutor thread; stream a reply
     (app)/plan, flashcards, desmos, more
 ```

@@ -1,0 +1,468 @@
+{
+"boundaries": [
+{
+"d": "easy",
+"p": "The hikers reached the lake at noon ______ they ate lunch on the rocks by the shore.",
+"r": "noon, and",
+"w": [
+"noon, ",
+"noon and,",
+"noon and"
+],
+"e": "Two complete sentences joined by “and” need a comma before “and.” A comma alone creates a comma splice."
+},
+{
+"d": "easy",
+"p": "Our science class visited the planetarium ______ the students learned how to find the North Star.",
+"r": "planetarium, where",
+"w": [
+"planetarium where,",
+"planetarium. Where",
+"planetarium; where"
+],
+"e": "“Where the students learned...” is a dependent clause, so it attaches with a comma. A semicolon or period would leave a fragment."
+},
+{
+"d": "easy",
+"p": "Before the concert began ______ the musicians tuned their instruments backstage.",
+"r": "began,",
+"w": [
+"began",
+"began;",
+"began:"
+],
+"e": "An introductory clause is followed by a comma. A semicolon or colon needs a complete sentence before it."
+},
+{
+"d": "easy",
+"p": "The recipe calls for three ingredients ______ flour, butter, and sugar.",
+"r": "ingredients:",
+"w": [
+"ingredients;",
+"ingredients, and",
+"ingredients. Flour,"
+],
+"e": "A colon introduces a list after a complete sentence. A semicolon needs a full sentence after it, too."
+},
+{
+"d": "easy",
+"p": "My sister plays the violin ______ my brother plays the drums.",
+"r": "violin;",
+"w": [
+"violin,",
+"violin",
+"violin and,"
+],
+"e": "A semicolon can join two complete sentences. A comma alone makes a comma splice, and no punctuation makes a run-on."
+},
+{
+"d": "easy",
+"p": "The library, which opened in 1925 ______ is the oldest building on campus.",
+"r": "1925,",
+"w": [
+"1925",
+"1925;",
+"1925:"
+],
+"e": "The extra information needs a closing comma to match the one after “library.”"
+},
+{
+"d": "easy",
+"p": "The storm knocked down several trees ______ workers cleared the road by morning.",
+"r": "trees, but",
+"w": [
+"trees, ",
+"trees but,",
+"trees; but"
+],
+"e": "A comma plus “but” correctly joins two complete sentences. A comma alone is a splice."
+},
+{
+"d": "easy",
+"p": "Sara packed a jacket ______ she expected cold weather in the mountains.",
+"r": "jacket because",
+"w": [
+"jacket. Because",
+"jacket; because",
+"jacket: because"
+],
+"e": "“Because she expected...” is dependent, so it can’t stand after a period or semicolon. No punctuation is needed."
+},
+{
+"d": "medium",
+"p": "Astronomer Vera Rubin measured how quickly stars orbit the centers of galaxies ______ her data revealed that the stars moved too fast to be held in place by visible matter alone, providing key evidence for dark matter.",
+"r": "galaxies;",
+"w": [
+"galaxies,",
+"galaxies",
+"galaxies, that"
+],
+"e": "Both sides are complete sentences, so a semicolon works. A comma alone is a splice, and no punctuation is a run-on."
+},
+{
+"d": "medium",
+"p": "The Inca built roads across the Andes without iron tools or wheeled vehicles ______ many of those roads, paved with fitted stone, are still walkable today.",
+"r": "vehicles, and",
+"w": [
+"vehicles, ",
+"vehicles and,",
+"vehicles; and,"
+],
+"e": "A comma before “and” joins two complete sentences. The other choices either splice or misplace the comma."
+},
+{
+"d": "medium",
+"p": "Mae Jemison, the first Black woman to travel in space ______ also trained as a physician and worked in the Peace Corps before joining NASA.",
+"r": "space,",
+"w": [
+"space",
+"space;",
+"space:"
+],
+"e": "The appositive needs a closing comma to match the one after “Jemison.” The sentence’s verb is “trained.”"
+},
+{
+"d": "medium",
+"p": "Although octopuses are solitary animals for most of their lives ______ researchers have occasionally observed them gathering in dense groups near rich food sources.",
+"r": "lives,",
+"w": [
+"lives;",
+"lives.",
+"lives:"
+],
+"e": "“Although...” is a dependent clause, so a comma connects it. A semicolon, period, or colon would leave it stranded as a fragment."
+},
+{
+"d": "medium",
+"p": "The museum’s newest exhibit features works by three sculptors: Ruth Asawa, known for her looped wire forms ______ Isamu Noguchi, who designed gardens as well as sculptures; and Augusta Savage, a leader of the Harlem Renaissance.",
+"r": "forms;",
+"w": [
+"forms,",
+"forms:",
+"forms"
+],
+"e": "Items in this list contain internal commas, so semicolons separate them. The later items use a semicolon, and this one must match."
+},
+{
+"d": "medium",
+"p": "Sound travels about four times faster in water than in air ______ whales can communicate across hundreds of miles of ocean.",
+"r": "air, so",
+"w": [
+"air, ",
+"air so,",
+"air; so,"
+],
+"e": "“So” here joins two complete sentences and needs a comma before it, not after it."
+},
+{
+"d": "medium",
+"p": "Maria Tallchief became the first American prima ballerina of the New York City Ballet in 1947 ______ performance in The Firebird two years later made her internationally famous.",
+"r": "1947; her",
+"w": [
+"1947, her",
+"1947 her",
+"1947, and, her"
+],
+"e": "Two complete sentences must be separated. A semicolon does this; a comma alone is a splice, and no punctuation is a run-on."
+},
+{
+"d": "medium",
+"p": "The bridge’s designers tested a scale model in a wind tunnel ______ a step that revealed a dangerous vibration long before construction began.",
+"r": "tunnel,",
+"w": [
+"tunnel;",
+"tunnel.",
+"tunnel"
+],
+"e": "“A step that revealed...” is not a complete sentence; it renames the action before it, so it attaches with a comma."
+},
+{
+"d": "hard",
+"p": "For centuries, sailors crossing the Pacific relied on stick charts, lattices of palm ribs and shells used by Marshall Islanders to represent how ocean swells bend around islands ______ these charts were memorized before departure and never carried on the voyage itself, which meant that a navigator’s most essential instrument was his own trained recall.",
+"r": "islands;",
+"w": [
+"islands,",
+"islands, these",
+"islands"
+],
+"e": "The clause beginning “these charts were memorized” is a complete sentence, as is the first part. A semicolon separates them; a comma makes a splice, however long the sentences are."
+},
+{
+"d": "hard",
+"p": "The novelist Toni Morrison, who worked for years as an editor at Random House while raising two children and writing in the early mornings ______ published her first book, The Bluest Eye, in 1970.",
+"r": "mornings,",
+"w": [
+"mornings",
+"mornings;",
+"mornings—"
+],
+"e": "The long “who” clause opened with a comma, so it must close with one. The verb “published” is far from its subject “Toni Morrison,” which hides the need."
+},
+{
+"d": "hard",
+"p": "Marine geologist Marie Tharp spent years plotting depth measurements by hand ______ when her finished map of the Atlantic floor revealed a vast rift valley running along the mid-ocean ridge, it gave crucial support to the then-controversial theory of continental drift.",
+"r": "hand;",
+"w": [
+"hand,",
+"hand, and,",
+"hand"
+],
+"e": "Both sides are complete sentences; the “when” clause belongs to the second one. A semicolon marks that boundary."
+},
+{
+"d": "hard",
+"p": "Some early photographers relied on the wet-plate process, which required coating a glass plate with chemicals, exposing it, and developing it before it dried ______ as a result, those working outdoors had to bring a portable darkroom with them.",
+"r": "dried;",
+"w": [
+"dried,",
+"dried:",
+"dried, and,"
+],
+"e": "“As a result” begins a new independent clause. A semicolon goes before it and a comma after it."
+},
+{
+"d": "hard",
+"p": "According to linguist Marina Ortiz, children who grow up hearing two languages do not simply learn each one more slowly ______ rather, they develop a distinct system in which the two languages interact from the very start.",
+"r": "slowly;",
+"w": [
+"slowly,",
+"slowly",
+"slowly, and"
+],
+"e": "“Rather” is a transition beginning a new independent clause, so a semicolon is needed. A comma would create a splice."
+},
+{
+"d": "hard",
+"p": "Before announcing its decision, the committee reviewed proposals from three cities: Lyon, France ______ Porto, Portugal; and Ghent, Belgium.",
+"r": "France;",
+"w": [
+"France,",
+"France:",
+"France"
+],
+"e": "Because each item contains a comma, semicolons must separate them. The next item already uses one."
+},
+{
+"d": "hard",
+"p": "The chemist’s notebooks, long thought to have been destroyed in a laboratory fire ______ surfaced in 2009 at an estate sale in Ohio, where a graduate student recognized the handwriting.",
+"r": "fire,",
+"w": [
+"fire",
+"fire;",
+"fire—"
+],
+"e": "The interruption opened with a comma and must close with one. A dash would be a mismatched pair."
+},
+{
+"d": "hard",
+"p": "Few visitors to the ruined abbey notice the shallow grooves worn into its stone steps ______ yet these marks, left by centuries of monks walking the same path to prayer, may be the most intimate trace of daily life at the site.",
+"r": "steps,",
+"w": [
+"steps",
+"steps:",
+"steps. Yet,"
+],
+"e": "“Yet” joins two complete sentences, so a comma goes before it. No punctuation makes a run-on, and a colon doesn’t fit before “yet.”"
+}
+],
+"form_structure_sense": [
+{
+"d": "easy",
+"p": "The pack of wolves ______ across the frozen river each winter to reach its feeding grounds.",
+"r": "travels",
+"w": [
+"travel",
+"are traveling",
+"have traveled"
+],
+"e": "The subject is “pack,” which is singular, so the verb is “travels.”"
+},
+{
+"d": "easy",
+"p": "Each of the runners ______ a number pinned to the front of a shirt during the race.",
+"r": "wears",
+"w": [
+"wear",
+"are wearing",
+"have worn"
+],
+"e": "“Each” is singular, so it takes “wears.” “Of the runners” doesn’t change the subject."
+},
+{
+"d": "easy",
+"p": "Last summer, Dana ______ to the coast with her family and collected shells on the beach.",
+"r": "traveled",
+"w": [
+"travels",
+"will travel",
+"is traveling"
+],
+"e": "“Last summer” sets the past tense, which also matches “collected.”"
+},
+{
+"d": "easy",
+"p": "The students finished ______ projects a full week before the science fair.",
+"r": "their",
+"w": [
+"there",
+"they’re",
+"its"
+],
+"e": "The plural possessive “their” shows that the projects belong to the students."
+},
+{
+"d": "easy",
+"p": "The ______ collars were all a bright shade of red, which made them easy to spot in the park.",
+"r": "dogs’",
+"w": [
+"dogs",
+"dog’s",
+"dogs’s"
+],
+"e": "“All” the collars belong to more than one dog, so the plural possessive “dogs’” is needed."
+},
+{
+"d": "easy",
+"p": "My aunt, along with her two sons, ______ at the farmers’ market every Saturday.",
+"r": "works",
+"w": [
+"work",
+"are working",
+"have worked"
+],
+"e": "The subject is “aunt.” “Along with her two sons” doesn’t make it plural."
+},
+{
+"d": "medium",
+"p": "The collection of essays, published shortly after the author’s death, ______ her experiences as a nurse during the war.",
+"r": "describes",
+"w": [
+"describe",
+"have described",
+"are describing"
+],
+"e": "The subject is “collection,” not “essays,” so the verb is singular."
+},
+{
+"d": "medium",
+"p": "Hoping to reduce noise in the city’s busiest neighborhoods, ______",
+"r": "officials installed sound barriers along the main highway.",
+"w": [
+"sound barriers were installed along the main highway by officials.",
+"the main highway received new sound barriers from officials.",
+"noise was reduced by sound barriers along the main highway."
+],
+"e": "The opening phrase describes who was hoping. That must come right after the comma, and only officials can hope."
+},
+{
+"d": "medium",
+"p": "Since it was founded in 1892, the Sierra Club ______ to protect wilderness areas across the United States.",
+"r": "has worked",
+"w": [
+"worked",
+"works",
+"will work"
+],
+"e": "“Since” plus a past date calls for the present perfect “has worked.”"
+},
+{
+"d": "medium",
+"p": "The ancient Greek city of Athens is famous for ______ democracy, in which male citizens voted directly on laws.",
+"r": "its",
+"w": [
+"it’s",
+"their",
+"they’re"
+],
+"e": "“Athens” is a singular city, and possession needs “its,” not the contraction “it’s.”"
+},
+{
+"d": "medium",
+"p": "Neither the mayor nor the council members ______ willing to comment on the proposed budget.",
+"r": "were",
+"w": [
+"was",
+"is",
+"has been"
+],
+"e": "With “neither...nor,” the verb agrees with the nearer subject, “members,” which is plural."
+},
+{
+"d": "medium",
+"p": "Among the most popular exhibits at the science center ______ a working model of a Mars rover and a room that simulates an earthquake.",
+"r": "are",
+"w": [
+"is",
+"was",
+"has been"
+],
+"e": "The sentence is inverted: the subject is the compound “a working model... and a room,” so the verb is plural."
+},
+{
+"d": "hard",
+"p": "The discovery of thousands of clay tablets at the site, many of them inscribed with records of grain shipments and tax payments, ______ historians a remarkably detailed view of daily administration in the ancient city.",
+"r": "has given",
+"w": [
+"have given",
+"give",
+"are giving"
+],
+"e": "The subject is “discovery,” not “tablets” or “payments.” The long phrases between hide the singular subject."
+},
+{
+"d": "hard",
+"p": "Having studied the migration routes of arctic terns for over a decade, ______",
+"r": "researcher Carsten Egevang found that the birds travel far longer distances than earlier estimates had suggested.",
+"w": [
+"the distances traveled by the birds were found by researcher Carsten Egevang to be far longer than earlier estimates had suggested.",
+"earlier estimates of the birds’ travel were shown by researcher Carsten Egevang to be far too low.",
+"it was found by researcher Carsten Egevang that the birds travel far longer distances than earlier estimates had suggested."
+],
+"e": "The person who “studied” must follow the comma. Each wrong choice puts distances, estimates, or “it” in that position, which creates a dangling modifier."
+},
+{
+"d": "hard",
+"p": "The architect’s drawings, together with a set of letters she exchanged with the city’s planners, ______ that the original design for the plaza included a much larger fountain.",
+"r": "indicate",
+"w": [
+"indicates",
+"has indicated",
+"is indicating"
+],
+"e": "The subject is “drawings,” plural. “Together with a set of letters” is an add-on, and “planners” is not the subject."
+},
+{
+"d": "hard",
+"p": "By the time the expedition reached the coast in 1805, its members ______ more than two thousand miles on foot and by canoe.",
+"r": "had traveled",
+"w": [
+"travel",
+"will have traveled",
+"are traveling"
+],
+"e": "“By the time” plus a past event calls for the past perfect: the travel happened before reaching the coast."
+},
+{
+"d": "hard",
+"p": "Scholars who have compared the two manuscripts agree that the poet Phillis Wheatley revised ______ early verses extensively, though they disagree about when those changes were made.",
+"r": "her",
+"w": [
+"their",
+"its",
+"they’re"
+],
+"e": "The verses belong to Phillis Wheatley, so the singular “her” is correct. “Their” would wrongly point to the scholars."
+},
+{
+"d": "hard",
+"p": "The survival of these fragile paper maps, most of which were folded into trunks and forgotten for generations, ______ largely a matter of luck.",
+"r": "is",
+"w": [
+"are",
+"were",
+"have been"
+],
+"e": "The subject is “survival,” which is singular. “Maps” and “generations” sit between the subject and the verb to mislead you."
+}
+]
+}
